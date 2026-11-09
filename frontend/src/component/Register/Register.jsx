@@ -34,7 +34,6 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
   const [successMessage, setSuccessMessage] = useState('')
 
   const divisions = [
-    { id: 'admin', label: 'Admin', icon: Shield },
     { id: 'penjualan', label: 'Penjualan', icon: Store },
     { id: 'gudang', label: 'Gudang', icon: Package }
   ]
@@ -176,7 +175,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
               </div>
 
               {/* Segmented Control Buttons */}
-              <div className="grid grid-cols-3 gap-1 rounded-2xl bg-[#ebecee] p-1.5">
+              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[#ebecee] p-1.5">
                 {divisions.map((div) => {
                   const Icon = div.icon
                   const isSelected = selectedDivision === div.id
@@ -213,7 +212,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
                   type="text"
                   required
                   disabled={isValidating}
-                  placeholder="Nama lengkap sesuai KTP / ID Karyawan"
+                  placeholder="Masukkan Nama lengkap"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -221,10 +220,10 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
               </div>
             </div>
 
-            {/* Email Perusahaan / Pribadi */}
+            {/* MasukkanEmail Perusahaan / Pribadi */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-800">
-                Email Perusahaan / Pribadi <span className="text-red-500">*</span>
+                Email  <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -234,7 +233,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
                   type="email"
                   required
                   disabled={isValidating}
-                  placeholder="nama@kikystationery.id"
+                  placeholder="Masukkan Email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
