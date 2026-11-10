@@ -13,10 +13,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Registrasi alias middleware hak akses divisi
-        $middleware->alias([
-            'divisi' => CheckDivisi::class,
-        ]);
+    // Registrasi alias middleware hak akses divisi
+    $middleware->alias([
+        'divisi' => CheckDivisi::class,
+    ]);
+
+    // API mengembalikan JSON jika pengguna belum terautentikasi
+    $middleware->redirectGuestsTo(function ($request) {
+        return $request->is('api/*') ? null : route('login');
+    });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

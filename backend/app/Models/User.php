@@ -16,13 +16,19 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'nama_lengkap',
-        'username',
-        'email',
-        'password',
-        'divisi',
-    ];
+   protected $fillable = [
+    'nama_lengkap',
+    'username',
+    'email',
+    'password',
+    'divisi',
+    'no_telepon',
+    'domisili',
+    'jabatan',
+    'cabang',
+    'atasan_langsung',
+    'email_verified_at',
+];
 
     /**
      * Atribut yang disembunyikan saat serialisasi JSON
