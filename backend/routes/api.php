@@ -14,6 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     //Endpoint Unggal Excel
     Route::post('/import/sales-orders', [ImportController::class, 'importSalesOrder']);
+    Route::post('/import/barang', [ImportController::class, 'importBarang']);
 
     // Fitur Logout
     Route::post('/logout', [AuthController::class, 'logout']);
