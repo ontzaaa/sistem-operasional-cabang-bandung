@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ImportController;
 use Illuminate\Support\Facades\Route;
 
 // 1. Rute Publik (Tanpa Token)
@@ -9,6 +11,9 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // 2. Rute Terproteksi (Wajib Bearer Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    //Endpoint Unggal Excel
+    Route::post('/import/sales-orders', [ImportController::class, 'importSalesOrder']);
 
     // Fitur Logout
     Route::post('/logout', [AuthController::class, 'logout']);
