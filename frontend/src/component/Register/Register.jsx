@@ -9,9 +9,15 @@ import {
   ArrowRight,
   Shield,
   Store,
-  Package
+  Package,
+  Phone,
+  MapPin,
+  Briefcase,
+  Building2,
+  UserCheck
 } from 'lucide-react'
 import bgWarehouse from '../../assets/Images/background.jpeg'
+import logoKiky from '../../assets/Images/logo tulisan kiky.png'
 
 export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
   // Dukung prop onNavigateToLogin maupun onSwitchToLogin
@@ -25,6 +31,11 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
+    domicile: '',
+    position: '',
+    branch: '',
+    directSupervisor: '',
     password: '',
     confirmPassword: ''
   })
@@ -35,7 +46,8 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
 
   const divisions = [
     { id: 'penjualan', label: 'Penjualan', icon: Store },
-    { id: 'gudang', label: 'Gudang', icon: Package }
+    { id: 'gudang', label: 'Gudang', icon: Package },
+    { id: 'admin', label: 'Admin', icon: ShieldCheck }
   ]
 
   const activeDivisionLabel = divisions.find((d) => d.id === selectedDivision)?.label || 'Penjualan'
@@ -63,12 +75,16 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
     setIsValidating(true)
 
     // Siapkan payload sesuai dengan API Laravel AuthController
-    // fields: nama_lengkap, username, email, password, divisi
     const username = formData.email.split('@')[0] || formData.fullName.toLowerCase().replace(/\s+/g, '')
     const payload = {
       nama_lengkap: formData.fullName,
       username: username,
       email: formData.email,
+      nomor_telepon: formData.phone,
+      domisili: formData.domicile,
+      jabatan: formData.position,
+      cabang: formData.branch,
+      atasan_langsung: formData.directSupervisor,
       password: formData.password,
       divisi: selectedDivision
     }
@@ -127,8 +143,8 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
 
   return (
     <div className="relative flex min-h-screen w-full bg-white font-sans text-slate-800 antialiased selection:bg-[#0c3558] selection:text-white overflow-x-hidden">
-      
-      {/* Kolom Kiri: Form Registrasi */}
+
+      {/* Kolom Kiri: Form Registrasi (Kembali Rata Kiri Standar) */}
       <div className="relative flex w-full flex-col justify-between px-6 py-8 sm:px-12 md:px-16 lg:w-1/2 lg:py-10 xl:px-20">
         <div className="relative z-10">
           {/* Header Logo KIKY */}
@@ -162,7 +178,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
 
           {/* Form Registrasi */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            
+
             {/* Divisi Akses Section */}
             <div>
               <div className="mb-2 flex items-center justify-between text-xs">
@@ -175,7 +191,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
               </div>
 
               {/* Segmented Control Buttons */}
-              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[#ebecee] p-1.5">
+              <div className="grid grid-cols-3 gap-1 rounded-2xl bg-[#ebecee] p-1.5">
                 {divisions.map((div) => {
                   const Icon = div.icon
                   const isSelected = selectedDivision === div.id
@@ -185,11 +201,10 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
                       type="button"
                       disabled={isValidating}
                       onClick={() => setSelectedDivision(div.id)}
-                      className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-medium transition-all duration-200 cursor-pointer ${
-                        isSelected
+                      className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-medium transition-all duration-200 cursor-pointer ${isSelected
                           ? 'bg-white text-slate-900 shadow-sm font-semibold'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
-                      }`}
+                        }`}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{div.label}</span>
@@ -220,10 +235,10 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
               </div>
             </div>
 
-            {/* MasukkanEmail Perusahaan / Pribadi */}
+            {/* Email Perusahaan / Pribadi */}
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-800">
-                Email  <span className="text-red-500">*</span>
+                Email <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -236,6 +251,113 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
                   placeholder="Masukkan Email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Nomor Telepon & Domisili */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                  Nomor Telepon <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Phone className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="tel"
+                    required
+                    disabled={isValidating}
+                    placeholder="Contoh: 081234567890"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                  Domisili <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    disabled={isValidating}
+                    placeholder="Contoh: Jakarta Barat"
+                    value={formData.domicile}
+                    onChange={(e) => setFormData({ ...formData, domicile: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Jabatan & Cabang */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                  Jabatan <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Briefcase className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    disabled={isValidating}
+                    placeholder="Contoh: Staff Penjualan"
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                  Cabang <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    disabled={isValidating}
+                    placeholder="Contoh: Cabang Solo / Pusat"
+                    value={formData.branch}
+                    onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Atasan Langsung */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-800">
+                Atasan Langsung <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  disabled={isValidating}
+                  placeholder="Masukkan nama atasan langsung"
+                  value={formData.directSupervisor}
+                  onChange={(e) => setFormData({ ...formData, directSupervisor: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#0c3558] focus:outline-none focus:ring-2 focus:ring-[#0c3558]/10 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
                 />
               </div>
@@ -351,29 +473,29 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
         </div>
       </div>
 
-      {/* Kolom Kanan: Gambar Background Gudang & Logo Watermark KIKY */}
-      <div className="relative hidden lg:block lg:w-1/2 overflow-hidden bg-slate-900">
-        {/* Background image warehouse */}
+      {/* Kolom Kanan: Gambar Background Gudang & Tulisan KIKY Pas Posisi Tengah Layar */}
+      <div className="relative hidden lg:block lg:w-1/2 min-h-screen overflow-hidden bg-slate-900">
+        {/* Background Foto Gudang */}
         <img
           src={bgWarehouse}
           alt="Gudang Kiky Stationery"
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {/* Dark Navy Tinted Overlay (Sesuai Screenshot) */}
+        {/* Gradient Overlay Gelap */}
         <div className="absolute inset-0 bg-[#081e33]/60 bg-gradient-to-t from-[#051524]/80 via-[#081e33]/50 to-[#0c2a47]/40" />
 
-        {/* Center Watermark KIKY Capsule Badge (Sesuai Screenshot) */}
-        <div className="relative z-10 flex h-full items-center justify-center p-8">
-          <div className="flex items-center justify-center rounded-full border-[2.5px] border-white/25 bg-slate-950/40 px-12 py-4 shadow-2xl backdrop-blur-sm">
-            <span className="text-4xl sm:text-5xl font-black tracking-[0.28em] text-slate-100 select-none pl-2">
-              KIKY
-            </span>
-          </div>
+        {/* Tulisan KIKY Pas Persis di Titik Tengah Layar Kanan */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-8 pointer-events-none">
+          <img
+            src={logoKiky}
+            alt="KIKY Stationery"
+            className="w-96 sm:w-[28rem] lg:w-[32rem] max-w-full h-auto object-contain drop-shadow-2xl select-none"
+          />
         </div>
       </div>
 
-      {/* Pop Up Loading Pendaftaran Akun Standar */}
+      {/* Pop Up Loading Pendaftaran Akun */}
       {isValidating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
           <div className="flex w-full max-w-[240px] flex-col items-center justify-center rounded-2xl bg-white px-6 py-6 shadow-xl border border-slate-100">
