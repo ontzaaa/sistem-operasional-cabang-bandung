@@ -4,125 +4,336 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SalesOrder;
-use App\Models\PengirimanGudang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DashboardController extends Controller
 {
     /**
-     * Endpoint utama untuk memuat seluruh data Dashboard
      * GET /api/dashboard
      */
     public function index(Request $request)
     {
         try {
-            // 1. Kartu Metrik Atas (Metrics Summary)
-            $nilaiPenjualan = SalesOrder::where('status_so', '!=', 'Batal')->sum('total_harga');
-            $totalSalesOrder = SalesOrder::count();
 
-            // Antrean Gudang (Menunggu Picking)
-            $antreanGudangOrder = PengirimanGudang::where('status_pengiriman', 'Menunggu_Picking')->count();
-            $antreanGudangBox = DB::table('detail_sales_orders')
-                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                ->join('pengiriman_gudang', 'pengiriman_gudang.sales_order_id', '=', 'sales_orders.id')
-                ->where('pengiriman_gudang.status_pengiriman', 'Menunggu_Picking')
-                ->sum('detail_sales_orders.jumlah_pesan');
+            // ==========================================
+            // 1. METRIK PENJUALAN
+            // Satu query untuk SUM dan COUNT
+            // ==========================================
 
-            // Dalam Pengiriman
-            $dalamPengirimanOrder = PengirimanGudang::where('status_pengiriman', 'Diperjalanan')->count();
-            $dalamPengirimanBox = DB::table('detail_sales_orders')
-                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                ->join('pengiriman_gudang', 'pengiriman_gudang.sales_order_id', '=', 'sales_orders.id')
-                ->where('pengiriman_gudang.status_pengiriman', 'Diperjalanan')
-                ->sum('detail_sales_orders.jumlah_pesan');
+            $metrikPenjualan = DB::table('sales_orders')
+                ->where('status', '!=', 'Cancelled')
+                ->selectRaw('
+                    COALESCE(SUM(grand_total), 0) AS nilai_penjualan,
+                    COUNT(*) AS total_sales_order
+                ')
+                ->first();
 
-            // 2. Posisi Order Saat Ini (Order Status Summary Widgets)
+            $nilaiPenjualan = (float) $metrikPenjualan->nilai_penjualan;
+            $totalSalesOrder = (int) $metrikPenjualan->total_sales_order;
+
+
+            // ==========================================
+            // 2. METRIK GUDANG
+            // Satu query untuk seluruh status gudang
+            // ==========================================
+
+            $statusGudang = [
+                'Menunggu_Picking',
+                'Proses_Picking',
+                'Proses_Packing',
+                'Siap_Kirim',
+                'Diperjalanan',
+            ];
+
+            $dataStatusGudang = DB::table('pengiriman_gudang')
+                ->select('status_pengiriman')
+                ->selectRaw('COUNT(*) AS total_order')
+                ->whereIn('status_pengiriman', $statusGudang)
+                ->groupBy('status_pengiriman')
+                ->get()
+                ->keyBy('status_pengiriman');
+
+            $jumlahOrderGudang = [];
+
+            foreach ($statusGudang as $status) {
+                $jumlahOrderGudang[$status] =
+                    (int) ($dataStatusGudang[$status]->total_order ?? 0);
+            }
+
+
+            // ==========================================
+            // 3. JUMLAH BARANG SELURUH STATUS GUDANG
+            // Satu query untuk semua status dan satuan
+            // ==========================================
+
+            $dataJumlahGudang = DB::table('detail_sales_orders')
+                ->join(
+                    'sales_orders',
+                    'detail_sales_orders.sales_order_id',
+                    '=',
+                    'sales_orders.id'
+                )
+                ->join(
+                    'pengiriman_gudang',
+                    'pengiriman_gudang.sales_order_id',
+                    '=',
+                    'sales_orders.id'
+                )
+                ->whereIn(
+                    'pengiriman_gudang.status_pengiriman',
+                    $statusGudang
+                )
+                ->select(
+                    'pengiriman_gudang.status_pengiriman',
+                    'detail_sales_orders.satuan'
+                )
+                ->selectRaw('SUM(detail_sales_orders.quantity) AS total')
+                ->groupBy(
+                    'pengiriman_gudang.status_pengiriman',
+                    'detail_sales_orders.satuan'
+                )
+                ->get();
+
+            $jumlahBarangGudang = [];
+
+            foreach ($statusGudang as $status) {
+                $jumlahBarangGudang[$status] = $this->formatJumlahBarang(
+                    $dataJumlahGudang->where(
+                        'status_pengiriman',
+                        $status
+                    )
+                );
+            }
+
+
+            // ==========================================
+            // 4. PENERIMAAN SALES ORDER
+            // SO Submitted yang belum memiliki pengiriman
+            // ==========================================
+
+            $soBelumDikirim = DB::table('sales_orders')
+                ->where('status', 'Submitted')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('pengiriman_gudang')
+                        ->whereColumn(
+                            'pengiriman_gudang.sales_order_id',
+                            'sales_orders.id'
+                        );
+                });
+
+            $penerimaanOrder = (clone $soBelumDikirim)->count();
+
+            $penerimaanJumlahData = DB::table('detail_sales_orders')
+                ->join(
+                    'sales_orders',
+                    'detail_sales_orders.sales_order_id',
+                    '=',
+                    'sales_orders.id'
+                )
+                ->where('sales_orders.status', 'Submitted')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('pengiriman_gudang')
+                        ->whereColumn(
+                            'pengiriman_gudang.sales_order_id',
+                            'sales_orders.id'
+                        );
+                })
+                ->select('detail_sales_orders.satuan')
+                ->selectRaw('SUM(detail_sales_orders.quantity) AS total')
+                ->groupBy('detail_sales_orders.satuan')
+                ->get();
+
+            $penerimaanJumlah = $this->formatJumlahBarang(
+                $penerimaanJumlahData
+            );
+
+
+            // ==========================================
+            // 5. POSISI ORDER
+            // Menggunakan hasil query agregasi sebelumnya
+            // ==========================================
+
             $posisiOrder = [
+
                 'penerimaan_so' => [
-                    'order' => SalesOrder::where('status_so', 'Pending')->count(),
-                    'box'   => (int) DB::table('detail_sales_orders')
-                                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                                ->where('sales_orders.status_so', 'Pending')
-                                ->sum('jumlah_pesan'),
+                    'order' => $penerimaanOrder,
+                    'jumlah' => $penerimaanJumlah,
                 ],
+
+                'menunggu_picking' => [
+                    'order' => $jumlahOrderGudang['Menunggu_Picking'],
+                    'jumlah' => $jumlahBarangGudang['Menunggu_Picking'],
+                ],
+
+                'proses_picking' => [
+                    'order' => $jumlahOrderGudang['Proses_Picking'],
+                    'jumlah' => $jumlahBarangGudang['Proses_Picking'],
+                ],
+
                 'disiapkan' => [
-                    'order' => PengirimanGudang::where('status_pengiriman', 'Proses_Packing')->count(),
-                    'box'   => (int) DB::table('detail_sales_orders')
-                                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                                ->join('pengiriman_gudang', 'pengiriman_gudang.sales_order_id', '=', 'sales_orders.id')
-                                ->where('pengiriman_gudang.status_pengiriman', 'Proses_Packing')
-                                ->sum('jumlah_pesan'),
+                    'order' => $jumlahOrderGudang['Proses_Packing'],
+                    'jumlah' => $jumlahBarangGudang['Proses_Packing'],
                 ],
+
                 'siap_kirim' => [
-                    'order' => PengirimanGudang::where('status_pengiriman', 'Siap_Kirim')->count(),
-                    'box'   => (int) DB::table('detail_sales_orders')
-                                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                                ->join('pengiriman_gudang', 'pengiriman_gudang.sales_order_id', '=', 'sales_orders.id')
-                                ->where('pengiriman_gudang.status_pengiriman', 'Siap_Kirim')
-                                ->sum('jumlah_pesan'),
+                    'order' => $jumlahOrderGudang['Siap_Kirim'],
+                    'jumlah' => $jumlahBarangGudang['Siap_Kirim'],
                 ],
+
                 'dalam_pengiriman' => [
-                    'order' => $dalamPengirimanOrder,
-                    'box'   => (int) $dalamPengirimanBox,
-                ],
-                'retur' => [
-                    'order' => SalesOrder::where('status_so', 'Retur')->count(),
-                    'box'   => (int) DB::table('detail_sales_orders')
-                                ->join('sales_orders', 'detail_sales_orders.sales_order_id', '=', 'sales_orders.id')
-                                ->where('sales_orders.status_so', 'Retur')
-                                ->sum('jumlah_pesan'),
+                    'order' => $jumlahOrderGudang['Diperjalanan'],
+                    'jumlah' => $jumlahBarangGudang['Diperjalanan'],
                 ],
             ];
 
-            // 3. Tabel Order Terbaru (5 Data Terakhir)
-            $orderTerbaru = SalesOrder::with(['toko:id,nama_toko', 'user:id,nama_lengkap', 'detailSalesOrder', 'pengirimanGudang'])
-                ->orderBy('created_at', 'desc')
-                ->take(5)
+
+            // ==========================================
+            // 6. ORDER TERBARU
+            // Eager loading untuk mencegah N+1 query
+            // ==========================================
+
+            $orderTerbaru = SalesOrder::with([
+                'customer',
+                'user',
+                'detailSalesOrder',
+                'pengirimanGudang',
+            ])
+                ->latest()
+                ->limit(5)
                 ->get()
                 ->map(function ($order) {
-                    $totalBox = $order->detailSalesOrder->sum('jumlah_pesan');
+
+                    $jumlahBarang = [
+                        'carton' => 0,
+                        'pack' => 0,
+                        'pcs' => 0,
+                    ];
+
+                    foreach ($order->detailSalesOrder as $detail) {
+
+                        $satuan = strtolower(
+                            trim($detail->satuan)
+                        );
+
+                        if (array_key_exists($satuan, $jumlahBarang)) {
+                            $jumlahBarang[$satuan] +=
+                                (float) $detail->quantity;
+                        }
+                    }
+
                     return [
-                        'id'               => $order->id,
-                        'nomor_so'         => $order->nomor_so,
-                        'pelanggan'        => $order->toko->nama_toko ?? '-',
-                        'salesperson'      => $order->user->nama_lengkap ?? '-',
-                        'box'              => (int) $totalBox,
-                        'status_penjualan' => $order->status_so,
-                        'status_gudang'    => [
-                            'label'   => $order->pengirimanGudang->status_pengiriman ?? 'Menunggu_Picking',
-                            'subtext' => $order->pengirimanGudang->keterangan ?? 'SO baru dari penjualan',
+                        'id' => $order->id,
+
+                        'nomor_so' => $order->nomor_so,
+
+                        'pelanggan' =>
+                            $order->customer->nama_pelanggan ?? '-',
+
+                        'salesperson' =>
+                            $order->user->nama_lengkap ?? '-',
+
+                        'jumlah_barang' => $jumlahBarang,
+
+                        'status_penjualan' => $order->status,
+
+                        'status_gudang' => [
+                            'label' =>
+                                $order->pengirimanGudang
+                                    ->status_pengiriman
+                                    ?? 'Belum Diproses',
+
+                            'subtext' =>
+                                $order->pengirimanGudang
+                                    ->keterangan
+                                    ?? 'Menunggu proses gudang',
                         ],
-                        'tanggal'          => $order->created_at->format('Y-m-d H:i'),
+
+                        'grand_total' => (float) $order->grand_total,
+
+                        'tanggal' => $order->created_at
+                            ? $order->created_at->format('Y-m-d H:i')
+                            : null,
                     ];
                 });
 
+
+            // ==========================================
+            // 7. RESPONSE DASHBOARD
+            // ==========================================
+
             return response()->json([
-                'status'  => true,
+
+                'status' => true,
+
                 'message' => 'Data dashboard berhasil dimuat',
-                'data'    => [
+
+                'data' => [
+
                     'metrics' => [
-                        'nilai_penjualan'   => (float) $nilaiPenjualan,
+
+                        'nilai_penjualan' => $nilaiPenjualan,
+
                         'total_sales_order' => $totalSalesOrder,
-                        'antrean_gudang'    => [
-                            'order' => $antreanGudangOrder,
-                            'box'   => (int) $antreanGudangBox,
+
+                        'antrean_gudang' => [
+                            'order' => $jumlahOrderGudang['Menunggu_Picking'],
+                            'jumlah' => $jumlahBarangGudang['Menunggu_Picking'],
                         ],
-                        'dalam_pengiriman'  => [
-                            'order' => $dalamPengirimanOrder,
-                            'box'   => (int) $dalamPengirimanBox,
+
+                        'dalam_pengiriman' => [
+                            'order' => $jumlahOrderGudang['Diperjalanan'],
+                            'jumlah' => $jumlahBarangGudang['Diperjalanan'],
                         ],
                     ],
-                    'posisi_order'  => $posisiOrder,
+
+                    'posisi_order' => $posisiOrder,
+
                     'order_terbaru' => $orderTerbaru,
-                ]
+                ],
+
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+
+            Log::error('Dashboard gagal dimuat', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
             return response()->json([
-                'status'  => false,
-                'message' => 'Gagal memuat data dashboard: ' . $e->getMessage()
+                'status' => false,
+                'message' => 'Gagal memuat data dashboard.',
             ], 500);
         }
+    }
+
+
+    /**
+     * Format jumlah Carton, Pack, dan PCS.
+     */
+    private function formatJumlahBarang($data): array
+    {
+        $hasil = [
+            'carton' => 0,
+            'pack' => 0,
+            'pcs' => 0,
+        ];
+
+        foreach ($data as $item) {
+
+            $satuan = strtolower(trim($item->satuan));
+
+            if (array_key_exists($satuan, $hasil)) {
+                $hasil[$satuan] = (float) $item->total;
+            }
+        }
+
+        return $hasil;
     }
 }
