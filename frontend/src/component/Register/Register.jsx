@@ -80,7 +80,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
       nama_lengkap: formData.fullName,
       username: username,
       email: formData.email,
-      nomor_telepon: formData.phone,
+      no_telepon: formData.phone,
       domisili: formData.domicile,
       jabatan: formData.position,
       cabang: formData.branch,
@@ -123,19 +123,8 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
         setErrorMessage(errMsg)
       }
     } catch (err) {
-      // Jika server Laravel mati (offline simulation)
-      console.warn('Backend Laravel offline, beralih ke simulasi:', err)
-      setSuccessMessage('Registrasi berhasil (Simulasi Mode). Mengarahkan ke login...')
-      setTimeout(() => {
-        if (handleSwitchToLogin) {
-          handleSwitchToLogin({
-            email: formData.email,
-            username: username,
-            division: selectedDivision,
-            message: `Akun ${formData.fullName} (${activeDivisionLabel}) siap digunakan.`
-          })
-        }
-      }, 1000)
+      console.error('Registrasi gagal terhubung ke server:', err)
+      setErrorMessage('Tidak dapat terhubung ke server. Data belum tersimpan; pastikan backend sedang berjalan.')
     } finally {
       setIsValidating(false)
     }
@@ -156,7 +145,7 @@ export default function Register({ onNavigateToLogin, onSwitchToLogin }) {
 
           {/* Heading */}
           <div className="mb-7">
-            <h1 className="font-serif text-3xl font-bold tracking-tight text-[#0c2b48] sm:text-4xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#0c2b48] sm:text-4xl">
               Daftar Akun Baru
             </h1>
             <p className="mt-2 text-xs text-slate-500 sm:text-sm">
