@@ -1,56 +1,70 @@
-import React, { useState } from 'react';
-import LoginForm from './component/Login/LoginForm';
-import Register from './component/Register/Register';
-import Dashboard from './component/Dashboard/Dashboard';
-import './App.css';
+import React, { useState } from 'react'
+import LandingPage from './component/Landing page/landing'
+import LoginForm from './component/Login/LoginForm'
+import Register from './component/Register/Register'
+import Dashboard from './component/Dashboard/Dashboard'
+import './App.css'
 
 export default function App() {
-  // Halaman default saat aplikasi dibuka: 'login'
-  const [currentPage, setCurrentPage] = useState('login');
-  const [successInfo, setSuccessInfo] = useState('');
-  const [user, setUser] = useState({
-    name: 'Andi Wijaya',
-    role: 'Operasional Gudang & Penjualan',
-    branch: 'Cabang Bandung',
-    idNumber: 'KRY - 0024',
-    email: 'andi.wijaya@solomurni.co.id',
-    phone: '+62 812-3456-7890',
-    department: 'Penjualan & Gudang'
-  });
+  const [currentPage, setCurrentPage] = useState('landing')
+  const [successInfo, setSuccessInfo] = useState('')
+  const [registeredUsername, setRegisteredUsername] = useState('')
+  const [user, setUser] = useState(null)
 
   const handleNavigateToLogin = (payload) => {
-    setCurrentPage('login');
-    if (payload?.message) {
-      setSuccessInfo(payload.message);
-    }
-  };
+    if (payload?.username) setRegisteredUsername(payload.username)
+    if (payload?.message) setSuccessInfo(payload.message)
+    setCurrentPage('login')
+  }
 
   const handleLoginSuccess = (userData) => {
-    if (userData) {
-      setUser((prev) => ({ ...prev, ...userData }));
+    const divisionNames = {
+      penjualan: 'Penjualan',
+      gudang: 'Gudang',
+      admin: 'Admin',
     }
-    setCurrentPage('dashboard');
-  };
+    const joinedDate = userData?.created_at
+      ? new Date(userData.created_at).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'Belum diisi'
+    const division = divisionNames[userData?.divisi] || userData?.divisi || 'Belum diisi'
+
+    setUser({
+      id: userData?.id,
+      name: userData?.nama_lengkap || userData?.username || 'Belum diisi',
+      role: userData?.jabatan || 'Belum diisi',
+      branch: userData?.cabang || 'Belum diisi',
+      idNumber: userData?.id ? `KRY - ${String(userData.id).padStart(4, '0')}` : 'Belum diisi',
+      email: userData?.email || 'Belum diisi',
+      phone: userData?.no_telepon || 'Belum diisi',
+      location: userData?.domisili || 'Belum diisi',
+      department: division,
+      mainBranch: userData?.cabang || 'Belum diisi',
+      manager: userData?.atasan_langsung || 'Belum diisi',
+      joinDate: joinedDate,
+      token: userData?.token,
+    })
+    setSuccessInfo('')
+    setCurrentPage('dashboard')
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 relative">
-      {/* Render Halaman Sesuai State */}
+    <div className="relative min-h-screen bg-slate-50">
+      {currentPage === 'landing' && <LandingPage onEnterSystem={() => setCurrentPage('login')} />}
+
       {currentPage === 'register' && (
-        <Register
-          onNavigateToLogin={handleNavigateToLogin}
-          onSwitchToLogin={() => setCurrentPage('login')}
-        />
+        <Register onNavigateToLogin={handleNavigateToLogin} onSwitchToLogin={handleNavigateToLogin} />
       )}
 
       {currentPage === 'login' && (
         <LoginForm
+          initialUsername={registeredUsername}
           onNavigateToRegister={() => {
-            setCurrentPage('register');
-            setSuccessInfo('');
-          }}
-          onSwitchToRegister={() => {
-            setCurrentPage('register');
-            setSuccessInfo('');
+            setSuccessInfo('')
+            setCurrentPage('register')
           }}
           onLoginSuccess={handleLoginSuccess}
           successMessage={successInfo}
@@ -58,20 +72,12 @@ export default function App() {
       )}
 
       {currentPage === 'dashboard' && (
-        <Dashboard
-          user={user}
-          initialMenu="dashboard"
-          onLogout={() => setCurrentPage('login')}
-        />
+        <Dashboard user={user} initialMenu="dashboard" onLogout={() => setCurrentPage('login')} />
       )}
 
       {currentPage === 'pengaturan' && (
-        <Dashboard
-          user={user}
-          initialMenu="pengaturan"
-          onLogout={() => setCurrentPage('login')}
-        />
+        <Dashboard user={user} initialMenu="pengaturan" onLogout={() => setCurrentPage('login')} />
       )}
     </div>
-  );
+  )
 }
