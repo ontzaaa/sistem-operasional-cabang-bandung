@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use App\Http\Controllers\Controller;
 use App\Models\SalesOrder;
 use Illuminate\Http\Request;
@@ -16,23 +18,132 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'start_date' => [
+                'nullable',
+                'required_with:end_date',
+                'date_format:Y-m-d',
+            ],
+            'end_date' => [
+                'nullable',
+                'required_with:start_date',
+                'date_format:Y-m-d',
+                'after_or_equal:start_date',
+            ],
+        ]);
+
+        $startDate = isset($validated['start_date'])
+            ? Carbon::parse($validated['start_date'])->startOfDay()
+            : now()->startOfMonth();
+
+        $endDate = isset($validated['end_date'])
+            ? Carbon::parse($validated['end_date'])->endOfDay()
+            : now()->endOfMonth();
+
+        $jumlahHari = (int) $startDate->diffInDays($endDate) + 1;
+
+        $jenisGrafik = $jumlahHari <= 31 ? 'harian' : 'bulanan';
+
         try {
 
             // ==========================================
             // 1. METRIK PENJUALAN
-            // Satu query untuk SUM dan COUNT
+            // Mengikuti filter tanggal
             // ==========================================
 
             $metrikPenjualan = DB::table('sales_orders')
                 ->where('status', '!=', 'Cancelled')
+                ->whereBetween('tanggal_so', [
+                    $startDate->toDateString(),
+                    $endDate->toDateString(),
+                ])
                 ->selectRaw('
-                    COALESCE(SUM(grand_total), 0) AS nilai_penjualan,
+                     COALESCE(SUM(grand_total), 0) AS nilai_penjualan,
                     COUNT(*) AS total_sales_order
-                ')
+               ')
                 ->first();
 
             $nilaiPenjualan = (float) $metrikPenjualan->nilai_penjualan;
             $totalSalesOrder = (int) $metrikPenjualan->total_sales_order;
+
+            // ==========================================
+            // 1B. GRAFIK PENJUALAN
+            // ==========================================
+
+            $queryGrafik = DB::table('sales_orders')
+                ->where('status', '!=', 'Cancelled')
+                ->whereBetween('tanggal_so', [
+                    $startDate->toDateString(),
+                    $endDate->toDateString(),
+                ]);
+
+            if ($jenisGrafik === 'harian') {
+
+                $dataGrafik = $queryGrafik
+                    ->selectRaw('
+            DATE(tanggal_so) AS periode,
+            COALESCE(SUM(grand_total), 0) AS total_penjualan
+        ')
+                    ->groupByRaw('DATE(tanggal_so)')
+                    ->orderBy('periode')
+                    ->get()
+                    ->keyBy('periode');
+            } else {
+
+                $dataGrafik = $queryGrafik
+                    ->selectRaw("
+            TO_CHAR(tanggal_so, 'YYYY-MM') AS periode,
+            COALESCE(SUM(grand_total), 0) AS total_penjualan
+        ")
+                    ->groupByRaw("TO_CHAR(tanggal_so, 'YYYY-MM')")
+                    ->orderBy('periode')
+                    ->get()
+                    ->keyBy('periode');
+            }
+
+
+            // Menyiapkan data grafik
+            $grafikPenjualan = [];
+
+            if ($jenisGrafik === 'harian') {
+
+                $periodeGrafik = CarbonPeriod::create(
+                    $startDate->copy()->startOfDay(),
+                    '1 day',
+                    $endDate->copy()->startOfDay()
+                );
+
+                foreach ($periodeGrafik as $tanggal) {
+
+                    $periode = $tanggal->format('Y-m-d');
+
+                    $grafikPenjualan[] = [
+                        'periode' => $periode,
+                        'total_penjualan' => (float) (
+                            $dataGrafik[$periode]->total_penjualan ?? 0
+                        ),
+                    ];
+                }
+            } else {
+
+                $periodeGrafik = CarbonPeriod::create(
+                    $startDate->copy()->startOfMonth(),
+                    '1 month',
+                    $endDate->copy()->startOfMonth()
+                );
+
+                foreach ($periodeGrafik as $bulan) {
+
+                    $periode = $bulan->format('Y-m');
+
+                    $grafikPenjualan[] = [
+                        'periode' => $periode,
+                        'total_penjualan' => (float) (
+                            $dataGrafik[$periode]->total_penjualan ?? 0
+                        ),
+                    ];
+                }
+            }
 
 
             // ==========================================
@@ -232,10 +343,10 @@ class DashboardController extends Controller
                         'nomor_so' => $order->nomor_so,
 
                         'pelanggan' =>
-                            $order->customer->nama_pelanggan ?? '-',
+                        $order->customer->nama_pelanggan ?? '-',
 
                         'salesperson' =>
-                            $order->user->nama_lengkap ?? '-',
+                        $order->user->nama_lengkap ?? '-',
 
                         'jumlah_barang' => $jumlahBarang,
 
@@ -243,14 +354,14 @@ class DashboardController extends Controller
 
                         'status_gudang' => [
                             'label' =>
-                                $order->pengirimanGudang
-                                    ->status_pengiriman
-                                    ?? 'Belum Diproses',
+                            $order->pengirimanGudang
+                                ->status_pengiriman
+                                ?? 'Belum Diproses',
 
                             'subtext' =>
-                                $order->pengirimanGudang
-                                    ->keterangan
-                                    ?? 'Menunggu proses gudang',
+                            $order->pengirimanGudang
+                                ->keterangan
+                                ?? 'Menunggu proses gudang',
                         ],
 
                         'grand_total' => (float) $order->grand_total,
@@ -291,13 +402,19 @@ class DashboardController extends Controller
                         ],
                     ],
 
+                    'grafik_penjualan' => [
+                        'jenis_periode' => $jenisGrafik,
+                        'start_date' => $startDate->toDateString(),
+                        'end_date' => $endDate->toDateString(),
+                        'data' => $grafikPenjualan,
+                    ],
+
                     'posisi_order' => $posisiOrder,
 
                     'order_terbaru' => $orderTerbaru,
                 ],
 
             ], 200);
-
         } catch (Throwable $e) {
 
             Log::error('Dashboard gagal dimuat', [

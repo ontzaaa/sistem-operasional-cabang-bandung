@@ -16,19 +16,20 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-   protected $fillable = [
-    'nama_lengkap',
-    'username',
-    'email',
-    'password',
-    'divisi',
-    'no_telepon',
-    'domisili',
-    'jabatan',
-    'cabang',
-    'atasan_langsung',
-    'email_verified_at',
-];
+    protected $fillable = [
+        'nama_lengkap',
+        'username',
+        'email',
+        'password',
+        'divisi',
+        'no_telepon',
+        'domisili',
+        'jabatan',
+        'cabang',
+        'atasan_langsung',
+        'email_verified_at',
+        'can_access_dashboard',
+    ];
 
     /**
      * Atribut yang disembunyikan saat serialisasi JSON
@@ -49,6 +50,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'can_access_dashboard' => 'boolean',
         ];
     }
 }

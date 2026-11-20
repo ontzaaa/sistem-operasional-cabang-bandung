@@ -21,7 +21,7 @@ class AuthController extends Controller
             'username'     => 'required|string|max:255|unique:users',
             'email'        => 'required|string|email|max:255|unique:users',
             'password'     => 'required|string|min:6',
-            'divisi'       => 'required|in:penjualan,gudang',
+            'divisi'       => 'required|in:penjualan,gudang,admin',
         ]);
 
         if ($validator->fails()) {
@@ -54,7 +54,7 @@ class AuthController extends Controller
             ]
         ], 201);
     }
-        /**
+    /**
      * Endpoint API Login Pengguna
      */
     public function login(Request $request)

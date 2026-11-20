@@ -12,14 +12,22 @@ class DetailSalesOrder extends Model
         'barang_id',
         'quantity',
         'satuan',
+        'carton',
+        'pack',
         'harga',
         'subtotal',
+        'pack_per_carton_snapshot',
+        'isi_per_pack_snapshot',
     ];
 
     protected $casts = [
         'quantity' => 'float',
-        'harga'    => 'float',
+        'carton' => 'float',
+        'pack' => 'float',
+        'harga' => 'float',
         'subtotal' => 'float',
+        'pack_per_carton_snapshot' => 'integer',
+        'isi_per_pack_snapshot' => 'integer',
     ];
 
     public function salesOrder(): BelongsTo
@@ -32,4 +40,3 @@ class DetailSalesOrder extends Model
         return $this->belongsTo(Barang::class);
     }
 }
-

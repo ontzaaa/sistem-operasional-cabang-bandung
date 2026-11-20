@@ -14,6 +14,8 @@ class Barang extends Model
         'kode_induk',
         'nama_barang',
         'isi_per_box',
+        'pack_per_carton',
+        'isi_per_pack',
         'gudang',
         'lokasi_rak',
         'quantity',
@@ -28,11 +30,18 @@ class Barang extends Model
     ];
 
     protected $casts = [
-        'nilai_stock' => 'float',
-        'harga'       => 'float',
-        'harga_trt'   => 'float',
-        'harga_mtb'   => 'float',
-        'harga_msp'   => 'float',
+        'isi_per_box'       => 'integer',
+        'pack_per_carton'   => 'integer',
+        'isi_per_pack'      => 'integer',
+        'quantity'          => 'integer',
+        'carton'            => 'integer',
+        'pack'              => 'integer',
+        'pcs'               => 'integer',
+        'nilai_stock'       => 'float',
+        'harga'             => 'float',
+        'harga_trt'         => 'float',
+        'harga_mtb'         => 'float',
+        'harga_msp'         => 'float',
     ];
 
     public function detailSalesOrders(): HasMany
@@ -40,4 +49,3 @@ class Barang extends Model
         return $this->hasMany(DetailSalesOrder::class);
     }
 }
-
