@@ -89,7 +89,7 @@ class SalesOrderController extends Controller
     }
 
     // Menampilkan detail Sales Order
-    public function show($id)
+    public function show(int $id)
     {
         $salesOrder = SalesOrder::with([
             'customer',

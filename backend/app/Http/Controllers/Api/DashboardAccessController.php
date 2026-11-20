@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 class DashboardAccessController extends Controller
 {
     /**
-     * Menampilkan daftar pengguna dan status akses Dashboard.
-     * Khusus Admin.
+     * GET /api/admin/dashboard-access
+     * Menampilkan daftar pengguna beserta izin Dashboard.
      */
     public function index()
     {
@@ -35,10 +35,10 @@ class DashboardAccessController extends Controller
     }
 
     /**
-     * Memberikan atau mencabut akses Dashboard pengguna.
-     * Khusus Admin.
+     * PUT /api/admin/dashboard-access/{id}
+     * Mengubah izin akses Dashboard pengguna.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $validated = $request->validate([
             'can_access_dashboard' => ['required', 'boolean'],
@@ -48,30 +48,25 @@ class DashboardAccessController extends Controller
 
         if (!$user) {
             return response()->json([
-                'status' => false,
                 'message' => 'Pengguna tidak ditemukan.',
             ], 404);
         }
 
-        // Izin hanya dapat dikelola untuk divisi Penjualan dan Gudang.
-        if (!in_array(strtolower($user->divisi), ['penjualan', 'gudang'])) {
+        // Admin otomatis memiliki akses Dashboard.
+        if (strtolower($user->divisi) === 'admin') {
             return response()->json([
-                'status' => false,
-                'message' => 'Izin Dashboard hanya dapat dikelola untuk divisi Penjualan dan Gudang.',
-            ], 403);
+                'message' => 'Admin sudah memiliki akses Dashboard secara otomatis.',
+            ], 422);
         }
 
         $user->can_access_dashboard = $validated['can_access_dashboard'];
         $user->save();
 
         return response()->json([
-            'status' => true,
-            'message' => $user->can_access_dashboard
-                ? 'Akses Dashboard berhasil diberikan.'
-                : 'Akses Dashboard berhasil dicabut.',
+            'message' => 'Izin akses Dashboard berhasil diperbarui.',
             'data' => [
                 'id' => $user->id,
-                'nama_lengkap' => $user->nama_lengkap,
+                'name' => $user->name,
                 'divisi' => $user->divisi,
                 'can_access_dashboard' => $user->can_access_dashboard,
             ],

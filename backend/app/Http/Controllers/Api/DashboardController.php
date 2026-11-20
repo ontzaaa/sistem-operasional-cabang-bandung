@@ -434,8 +434,9 @@ class DashboardController extends Controller
     /**
      * Format jumlah Carton, Pack, dan PCS.
      */
-    private function formatJumlahBarang($data): array
-    {
+    private function formatJumlahBarang(
+        \Illuminate\Support\Collection $data
+    ): array {
         $hasil = [
             'carton' => 0,
             'pack' => 0,
