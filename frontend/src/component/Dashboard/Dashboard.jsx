@@ -477,7 +477,7 @@ export default function Dashboard({
       />
 
       {/* Konten Area Utama */}
-      <main className={`flex-1 min-w-0 overflow-y-auto ${activeMenu === 'penjualan' || activeMenu === 'barang' || activeMenu === 'gudang' ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
+      <main className={`flex-1 min-w-0 overflow-y-auto ${activeMenu === 'penjualan' || activeMenu === 'barang' || activeMenu === 'gudang' || activeMenu === 'pengaturan' ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
         {/* =========================================================================
             TAMPILAN DASHBOARD UTAMA OPERASIONAL KIKY (BERSIH, PROFESIONAL & HUMANIS)
            ========================================================================= */}

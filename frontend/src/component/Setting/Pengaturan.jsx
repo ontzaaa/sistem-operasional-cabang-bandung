@@ -147,12 +147,32 @@ function SelectField({ value, onChange, options }) {
 }
 
 export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operasional Gudang & Penjualan' }, onLogout }) {
+  // Fungsi terpadu untuk mengubah tema langsung di elemen DOM (HTML & Body)
+  const applyThemeToDOM = (themeMode) => {
+    let isDark = false
+    if (themeMode === 'gelap') {
+      isDark = true
+    } else if (themeMode === 'terang') {
+      isDark = false
+    } else {
+      isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+      document.body.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      document.body.classList.remove('dark')
+    }
+  }
+
   // State Tema yang aktif tersimpan di sistem
   const [activeTema, setActiveTema] = useState(() => {
     return localStorage.getItem('kiky_theme') || 'terang'
   })
 
-  // State Tema yang sedang dipilih pengguna di form (sebelum klik tombol Simpan Perubahan)
+  // State Tema yang sedang dipilih pengguna
   const [selectedTema, setSelectedTema] = useState(() => {
     return localStorage.getItem('kiky_theme') || 'terang'
   })
@@ -162,24 +182,16 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
     const saved = localStorage.getItem('kiky_theme') || 'terang'
     setActiveTema(saved)
     setSelectedTema(saved)
-
-    const applyTheme = (isDark) => {
-      if (isDark) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
-
-    if (saved === 'gelap') {
-      applyTheme(true)
-    } else if (saved === 'terang') {
-      applyTheme(false)
-    } else {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      applyTheme(systemPrefersDark)
-    }
+    applyThemeToDOM(saved)
   }, [])
+
+  // Handler saat opsi tema dipilih: LANGSUNG BERUBAH SECARA VISUAL SEKETIKA!
+  const handleSelectTheme = (themeMode) => {
+    setSelectedTema(themeMode)
+    applyThemeToDOM(themeMode) // Mengubah mode visual seketika saat opsi diklik!
+    localStorage.setItem('kiky_theme', themeMode)
+    window.dispatchEvent(new CustomEvent('kiky-theme-changed', { detail: { theme: themeMode } }))
+  }
 
   // State Preferensi Umum
   const [bahasa, setBahasa] = useState(() => localStorage.getItem('kiky_language') || 'id')
@@ -202,25 +214,10 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
   const t = text[bahasa] || text.id
 
   const handleSave = () => {
-    // 1. Terapkan tema yang dipilih ke <html> seketika
-    const applyTheme = (isDark) => {
-      if (isDark) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
+    // 1. Terapkan tema yang dipilih ke DOM seketika
+    applyThemeToDOM(selectedTema)
 
-    if (selectedTema === 'gelap') {
-      applyTheme(true)
-    } else if (selectedTema === 'terang') {
-      applyTheme(false)
-    } else {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      applyTheme(systemPrefersDark)
-    }
-
-    // 2. Simpan perubahan ke state aktif & localStorage
+    // 2. Simpan permanen ke state aktif & localStorage
     setActiveTema(selectedTema)
     localStorage.setItem('kiky_theme', selectedTema)
     localStorage.setItem('kiky_language', bahasa)
@@ -235,7 +232,11 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
   }
 
   const handleCancel = () => {
+    // Kembalikan ke tema yang sebelumnya tersimpan
     setSelectedTema(activeTema)
+    applyThemeToDOM(activeTema)
+    localStorage.setItem('kiky_theme', activeTema)
+    window.dispatchEvent(new CustomEvent('kiky-theme-changed', { detail: { theme: activeTema } }))
     setSaveSuccess(false)
   }
 
@@ -295,7 +296,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   {/* Pilihan 1: Mode Terang */}
                   <button
                     type="button"
-                    onClick={() => setSelectedTema('terang')}
+                    onClick={() => handleSelectTheme('terang')}
                     className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
                       selectedTema === 'terang'
                         ? 'border-[#1b2b44] dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
@@ -308,7 +309,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-bold text-slate-900 dark:text-white">{t.themeLight}</p>
-                        {activeTema === 'terang' && (
+                        {selectedTema === 'terang' && (
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                             Aktif
                           </span>
@@ -326,7 +327,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   {/* Pilihan 2: Mode Gelap */}
                   <button
                     type="button"
-                    onClick={() => setSelectedTema('gelap')}
+                    onClick={() => handleSelectTheme('gelap')}
                     className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
                       selectedTema === 'gelap'
                         ? 'border-[#1b2b44] dark:border-sky-400 bg-slate-900 text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
@@ -339,7 +340,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className={`text-xs font-bold ${selectedTema === 'gelap' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t.themeDark}</p>
-                        {activeTema === 'gelap' && (
+                        {selectedTema === 'gelap' && (
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                             Aktif
                           </span>
@@ -357,7 +358,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   {/* Pilihan 3: Sistem */}
                   <button
                     type="button"
-                    onClick={() => setSelectedTema('sistem')}
+                    onClick={() => handleSelectTheme('sistem')}
                     className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
                       selectedTema === 'sistem'
                         ? 'border-[#1b2b44] dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
@@ -370,7 +371,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-bold text-slate-900 dark:text-white">{t.themeSystem}</p>
-                        {activeTema === 'sistem' && (
+                        {selectedTema === 'sistem' && (
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                             Aktif
                           </span>

@@ -15,9 +15,11 @@
 
   html.dark,
   html.dark body,
-  html.dark #root {
-    background-color: #081524;
-    color: #f1f5f9;
+  html.dark #root,
+  body.dark,
+  body.dark #root {
+    background-color: #081524 !important;
+    color: #f1f5f9 !important;
   }
 }
 
