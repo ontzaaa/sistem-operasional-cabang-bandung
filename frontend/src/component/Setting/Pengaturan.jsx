@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ChevronDown,
   Info,
-  CheckCircle
+  CheckCircle,
+  Sun,
+  Moon,
+  Monitor,
+  Check
 } from 'lucide-react'
 
 // Kamus teks khusus halaman Pengaturan
@@ -10,10 +14,15 @@ const text = {
   id: {
     breadcrumb: 'Pengaturan',
     headerTitle: 'Pengaturan Akun',
-    headerDesc: 'Kelola preferensi sistem, notifikasi, dan keamanan akun.',
+    headerDesc: 'Kelola preferensi sistem, tema tampilan, notifikasi, dan keamanan akun.',
 
     prefTitle: 'Preferensi Sistem',
-    prefDesc: 'Atur bahasa antarmuka dan zona waktu operasional.',
+    prefDesc: 'Atur tema tampilan, bahasa antarmuka, dan zona waktu operasional.',
+    themeLabel: 'Tema Tampilan',
+    themeHelper: 'Pilih mode warna tampilan antarmuka aplikasi',
+    themeLight: 'Mode Terang',
+    themeDark: 'Mode Gelap',
+    themeSystem: 'Sistem',
     langLabel: 'Bahasa',
     langHelper: 'Bahasa tampilan aplikasi',
     tzLabel: 'Zona Waktu',
@@ -27,8 +36,8 @@ const text = {
     notifOpsDesc: 'Jadwal pengiriman barang, penyiapan pesanan, dan retur.',
     notifInfo: 'Notifikasi disesuaikan dengan hak akses akun operasional Anda.',
 
-    saveNote: 'Perubahan berlaku untuk sesi akun ini.',
-    saveSuccess: 'Perubahan berhasil disimpan.',
+    saveNote: 'Perubahan preferensi dan tema tersimpan di browser ini.',
+    saveSuccess: 'Pengaturan berhasil disimpan.',
     btnCancel: 'Batal',
     btnSave: 'Simpan Perubahan',
     logoutNote: 'Keluar dari sesi akun saat ini.',
@@ -49,10 +58,15 @@ const text = {
   en: {
     breadcrumb: 'Settings',
     headerTitle: 'Account Settings',
-    headerDesc: 'Manage system preferences, notifications, and account security.',
+    headerDesc: 'Manage system preferences, display themes, notifications, and account security.',
 
     prefTitle: 'System Preferences',
-    prefDesc: 'Set interface language and operational time zone.',
+    prefDesc: 'Set display theme, interface language, and operational time zone.',
+    themeLabel: 'Display Theme',
+    themeHelper: 'Choose application interface color mode',
+    themeLight: 'Light Mode',
+    themeDark: 'Dark Mode',
+    themeSystem: 'System',
     langLabel: 'Language',
     langHelper: 'Application display language',
     tzLabel: 'Time Zone',
@@ -66,8 +80,8 @@ const text = {
     notifOpsDesc: 'Shipping schedules, order prep, and return handling.',
     notifInfo: 'Notifications follow your operational account permissions.',
 
-    saveNote: 'Changes apply to this account session.',
-    saveSuccess: 'Changes saved successfully.',
+    saveNote: 'Preferences and theme changes are saved in this browser.',
+    saveSuccess: 'Settings saved successfully.',
     btnCancel: 'Cancel',
     btnSave: 'Save Changes',
     logoutNote: 'Sign out of current account session.',
@@ -98,8 +112,8 @@ function Toggle({ checked, onChange }) {
       className="inline-flex items-center justify-center p-1 cursor-pointer focus:outline-none"
     >
       <span
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-slate-300 transition-colors ${
-          checked ? 'bg-[#1b2b44] border-[#1b2b44]' : 'bg-slate-200'
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+          checked ? 'bg-[#1b2b44] dark:bg-sky-500 border-[#1b2b44] dark:border-sky-500' : 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
         }`}
       >
         <span
@@ -119,24 +133,57 @@ function SelectField({ value, onChange, options }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-md border border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#1b2b44] focus:outline-none focus:ring-1 focus:ring-[#1b2b44] cursor-pointer"
+        className="w-full appearance-none rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0c1c30] px-3.5 py-2.5 pr-10 text-sm text-slate-800 dark:text-slate-100 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44] cursor-pointer"
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option key={opt.value} value={opt.value} className="dark:bg-[#0c1c30]">
             {opt.label}
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
     </div>
   )
 }
 
 export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operasional Gudang & Penjualan' }, onLogout }) {
+  // State Tema yang aktif tersimpan di sistem
+  const [activeTema, setActiveTema] = useState(() => {
+    return localStorage.getItem('kiky_theme') || 'terang'
+  })
+
+  // State Tema yang sedang dipilih pengguna di form (sebelum klik tombol Simpan Perubahan)
+  const [selectedTema, setSelectedTema] = useState(() => {
+    return localStorage.getItem('kiky_theme') || 'terang'
+  })
+
+  // Sinkronisasi Tema saat komponen pertama kali dimuat
+  useEffect(() => {
+    const saved = localStorage.getItem('kiky_theme') || 'terang'
+    setActiveTema(saved)
+    setSelectedTema(saved)
+
+    const applyTheme = (isDark) => {
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    }
+
+    if (saved === 'gelap') {
+      applyTheme(true)
+    } else if (saved === 'terang') {
+      applyTheme(false)
+    } else {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      applyTheme(systemPrefersDark)
+    }
+  }, [])
+
   // State Preferensi Umum
-  const [bahasa, setBahasa] = useState('id')
-  const [zonaWaktu, setZonaWaktu] = useState('wib')
-  const [matauang, setMatauang] = useState('idr')
+  const [bahasa, setBahasa] = useState(() => localStorage.getItem('kiky_language') || 'id')
+  const [zonaWaktu, setZonaWaktu] = useState(() => localStorage.getItem('kiky_timezone') || 'wib')
 
   // State Notifikasi
   const [notifOrder, setNotifOrder] = useState(true)
@@ -155,8 +202,41 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
   const t = text[bahasa] || text.id
 
   const handleSave = () => {
+    // 1. Terapkan tema yang dipilih ke <html> seketika
+    const applyTheme = (isDark) => {
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    }
+
+    if (selectedTema === 'gelap') {
+      applyTheme(true)
+    } else if (selectedTema === 'terang') {
+      applyTheme(false)
+    } else {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      applyTheme(systemPrefersDark)
+    }
+
+    // 2. Simpan perubahan ke state aktif & localStorage
+    setActiveTema(selectedTema)
+    localStorage.setItem('kiky_theme', selectedTema)
+    localStorage.setItem('kiky_language', bahasa)
+    localStorage.setItem('kiky_timezone', zonaWaktu)
+
+    // 3. Trigger custom event untuk menyinkronkan seluruh bagian sistem
+    window.dispatchEvent(new CustomEvent('kiky-theme-changed', { detail: { theme: selectedTema } }))
+
+    // 4. Beri feedback sukses
     setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 2500)
+    setTimeout(() => setSaveSuccess(false), 3500)
+  }
+
+  const handleCancel = () => {
+    setSelectedTema(activeTema)
+    setSaveSuccess(false)
   }
 
   const handleLogout = () => {
@@ -164,20 +244,20 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#081524] font-sans text-slate-800 dark:text-slate-100 antialiased transition-colors duration-200">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
 
         {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="mb-4 text-xs text-slate-500">
-          <span className="font-medium text-slate-700">{t.breadcrumb}</span>
+        <nav aria-label="Breadcrumb" className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-medium text-slate-700 dark:text-slate-300">{t.breadcrumb}</span>
         </nav>
 
         {/* Header Halaman */}
-        <div className="mb-6 border-b border-slate-200 pb-5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <div className="mb-6 border-b border-slate-200 dark:border-slate-800 pb-5">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             {t.headerTitle}
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             {t.headerDesc}
           </p>
         </div>
@@ -188,19 +268,139 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
           {/* Kolom Kiri: Preferensi & Notifikasi */}
           <div className="space-y-6 lg:col-span-2">
 
-            {/* Card 1: Preferensi Umum */}
-            <div className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+            {/* Card 1: Preferensi Umum & Tema Tampilan */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] p-5 sm:p-6 shadow-xs">
               <div className="mb-4">
-                <h2 className="text-sm font-semibold text-slate-900">{t.prefTitle}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t.prefTitle}</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {t.prefDesc}
                 </p>
               </div>
 
+              {/* Pemilihan Tema Gelap & Terang */}
+              <div className="mb-5 pb-5 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t.themeLabel}
+                  </label>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    Tema aktif saat ini: <span className="font-semibold text-[#1b2b44] dark:text-sky-400 capitalize">{activeTema === 'gelap' ? 'Mode Gelap' : activeTema === 'terang' ? 'Mode Terang' : 'Sistem'}</span>
+                  </span>
+                </div>
+                <p className="mb-3 text-[11px] text-slate-500 dark:text-slate-400">
+                  {t.themeHelper}. Pilih salah satu opsi di bawah, lalu klik tombol <span className="font-semibold text-slate-700 dark:text-slate-200">"Simpan Perubahan"</span> untuk menerapkan.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Pilihan 1: Mode Terang */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTema('terang')}
+                    className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      selectedTema === 'terang'
+                        ? 'border-[#1b2b44] dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#081524] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                      <Sun className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{t.themeLight}</p>
+                        {activeTema === 'terang' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                            Aktif
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Latar putih &amp; bersih</p>
+                    </div>
+                    {selectedTema === 'terang' && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1b2b44] dark:bg-sky-500 text-white">
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Pilihan 2: Mode Gelap */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTema('gelap')}
+                    className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      selectedTema === 'gelap'
+                        ? 'border-[#1b2b44] dark:border-sky-400 bg-slate-900 text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#081524] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/60">
+                      <Moon className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className={`text-xs font-bold ${selectedTema === 'gelap' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t.themeDark}</p>
+                        {activeTema === 'gelap' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                            Aktif
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-[10px] mt-0.5 ${selectedTema === 'gelap' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>Nyaman di mata malam hari</p>
+                    </div>
+                    {selectedTema === 'gelap' && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white">
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Pilihan 3: Sistem */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTema('sistem')}
+                    className={`relative flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      selectedTema === 'sistem'
+                        ? 'border-[#1b2b44] dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-white ring-2 ring-[#1b2b44] dark:ring-sky-400 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#081524] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      <Monitor className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{t.themeSystem}</p>
+                        {activeTema === 'sistem' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                            Aktif
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Otomatis ikuti OS</p>
+                    </div>
+                    {selectedTema === 'sistem' && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1b2b44] dark:bg-sky-500 text-white">
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {/* Notifikasi jika ada pilihan belum disimpan */}
+                {selectedTema !== activeTema && (
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                    <span>
+                      Pilihan baru: <strong>{selectedTema === 'gelap' ? 'Mode Gelap' : selectedTema === 'terang' ? 'Mode Terang' : 'Sistem'}</strong>. Tekan tombol <strong>"Simpan Perubahan"</strong> di bawah untuk menerapkan secara langsung.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bahasa & Zona Waktu */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Bahasa Aplikasi */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                     {t.langLabel}
                   </label>
                   <SelectField
@@ -211,14 +411,14 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                       { value: 'en', label: 'English' },
                     ]}
                   />
-                  <p className="mt-1 text-[11px] text-slate-500">
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                     {t.langHelper}
                   </p>
                 </div>
 
                 {/* Zona Waktu */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-700">
+                  <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                     {t.tzLabel}
                   </label>
                   <SelectField
@@ -230,7 +430,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                       { value: 'wit', label: 'WIT (UTC+9)' },
                     ]}
                   />
-                  <p className="mt-1 text-[11px] text-slate-500">
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                     {t.tzHelper}
                   </p>
                 </div>
@@ -238,10 +438,10 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
             </div>
 
             {/* Card 2: Notifikasi & Reminder */}
-            <div className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] p-5 sm:p-6 shadow-xs">
               <div className="mb-4">
-                <h2 className="text-sm font-semibold text-slate-900">{t.notifTitle}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t.notifTitle}</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {t.notifDesc}
                 </p>
               </div>
@@ -250,8 +450,8 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                 {/* Toggle 1: Notifikasi Order */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="pr-2">
-                    <p className="text-sm font-medium text-slate-800">{t.notifOrderTitle}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{t.notifOrderTitle}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {t.notifOrderDesc}
                     </p>
                   </div>
@@ -260,13 +460,13 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100" />
+                <div className="border-t border-slate-100 dark:border-slate-800/80" />
 
                 {/* Toggle 2: Pengingat Operasional */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="pr-2">
-                    <p className="text-sm font-medium text-slate-800">{t.notifOpsTitle}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{t.notifOpsTitle}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {t.notifOpsDesc}
                     </p>
                   </div>
@@ -277,19 +477,19 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
               </div>
 
               {/* Info Notifikasi */}
-              <div className="mt-5 flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#081524] p-3 text-xs text-slate-600 dark:text-slate-400">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                 <span>{t.notifInfo}</span>
               </div>
             </div>
 
             {/* Aksi Simpan */}
-            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-xs text-slate-500">
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] p-4 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 {saveSuccess ? (
-                  <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                    <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-                    {t.saveSuccess}
+                  <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Mode <strong>{activeTema === 'gelap' ? 'Gelap' : activeTema === 'terang' ? 'Terang' : 'Sistem'}</strong> &amp; preferensi berhasil diterapkan dan disimpan!</span>
                   </span>
                 ) : (
                   <span>{t.saveNote}</span>
@@ -298,15 +498,15 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {}}
-                  className="flex-1 sm:flex-none rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer min-h-[38px]"
+                  onClick={handleCancel}
+                  className="flex-1 sm:flex-none rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[38px]"
                 >
                   {t.btnCancel}
                 </button>
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="flex-1 sm:flex-none rounded-md bg-[#1b2b44] px-5 py-2 text-xs font-semibold text-white hover:bg-[#111e33] transition-colors cursor-pointer min-h-[38px]"
+                  className="flex-1 sm:flex-none rounded-lg bg-[#1b2b44] dark:bg-sky-600 px-5 py-2 text-xs font-semibold text-white hover:bg-[#111e33] dark:hover:bg-sky-500 transition-colors cursor-pointer min-h-[38px] shadow-xs"
                 >
                   {t.btnSave}
                 </button>
@@ -314,14 +514,14 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
             </div>
 
             {/* Keluar dari Sesi */}
-            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-600">
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] p-4 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {t.logoutNote}
               </p>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full sm:w-auto rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer min-h-[38px]"
+                className="w-full sm:w-auto rounded-lg border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 px-4 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-100 transition-colors cursor-pointer min-h-[38px]"
               >
                 {t.btnLogout}
               </button>
@@ -330,17 +530,17 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
 
           {/* Kolom Kanan: Keamanan Akun */}
           <div className="lg:col-span-1">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] p-5 sm:p-6 shadow-xs">
               <div className="mb-4">
-                <h2 className="text-sm font-semibold text-slate-900">{t.secTitle}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t.secTitle}</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {t.secDesc}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-medium text-slate-800">{t.passTitle}</p>
-                <p className="mt-0.5 text-[11px] text-slate-500">
+                <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{t.passTitle}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                   {t.passChanged}
                 </p>
 
@@ -354,7 +554,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         placeholder={t.passOldPh}
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
-                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#1b2b44] focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
+                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
                     </div>
                     <div>
@@ -364,7 +564,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         placeholder={t.passNewPh}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#1b2b44] focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
+                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
                     </div>
                     <div>
@@ -374,7 +574,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         placeholder={t.passConfirmPh}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#1b2b44] focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
+                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
                     </div>
                     <div className="flex gap-2 pt-1">
@@ -386,7 +586,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           setNewPassword('')
                           setConfirmPassword('')
                         }}
-                        className="flex-1 rounded-md border border-slate-300 bg-white py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer min-h-[36px]"
+                        className="flex-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors cursor-pointer min-h-[36px]"
                       >
                         {t.passBtnCancel}
                       </button>
@@ -399,7 +599,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           setNewPassword('')
                           setConfirmPassword('')
                         }}
-                        className="flex-1 rounded-md bg-[#1b2b44] py-2 text-xs font-semibold text-white hover:bg-[#111e33] transition-colors cursor-pointer min-h-[36px]"
+                        className="flex-1 rounded-md bg-[#1b2b44] dark:bg-sky-600 py-2 text-xs font-semibold text-white hover:bg-[#111e33] dark:hover:bg-sky-500 transition-colors cursor-pointer min-h-[36px]"
                       >
                         {t.passBtnSave}
                       </button>
@@ -409,7 +609,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   <button
                     type="button"
                     onClick={() => setShowChangePassword(true)}
-                    className="mt-3 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer min-h-[38px]"
+                    className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[38px]"
                   >
                     {t.passBtnChange}
                   </button>

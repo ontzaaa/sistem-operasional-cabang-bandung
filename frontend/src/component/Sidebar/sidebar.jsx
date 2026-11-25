@@ -4,12 +4,12 @@ import {
   Package,
   ShoppingCart,
   ChartNoAxesCombined,
-  Users,
   Settings2,
   Bell,
   LogOut,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react'
 import logoHitamKiky from '../../assets/Images/logo hitam kiky.png'
 
@@ -27,6 +27,8 @@ export default function Sidebar({
   onSelectMenu,
   onLogout,
   user = { name: 'Admin Kiky', role: 'Administrator' },
+  mobileOpen = false,
+  onCloseMobile,
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const currentActive = activeMenu
@@ -40,47 +42,52 @@ export default function Sidebar({
 
   const handleMenuClick = (id) => {
     onSelectMenu?.(id)
+    onCloseMobile?.()
   }
 
-  return (
-    <aside
-      className={`sticky top-0 z-20 flex h-fit shrink-0 self-start flex-col border-r border-b border-[#e8e3d9] bg-[#fbfaf7] text-[#26332d] shadow-xs transition-[width] duration-200 rounded-br-2xl ${collapsed ? 'w-[76px]' : 'w-[252px]'}`}
-    >
-      <button
-        type="button"
-        onClick={() => setCollapsed((value) => !value)}
-        aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-        title={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-        className="absolute -right-3 top-7 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-[#e8e3d9] bg-[#fbfaf7] text-[#748078] shadow-sm transition-colors hover:text-[#315643]"
-      >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
-
+  const renderNavContent = (isMobile = false) => (
+    <div className="flex flex-col justify-between h-full">
       <div>
-        <div className={`flex h-[80px] items-center border-b border-[#eeeae2] ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'}`}>
-          <div className={`flex shrink-0 items-center justify-center rounded-xl bg-black shadow-xs border border-neutral-900/10 overflow-hidden transition-all ${collapsed ? 'h-9 w-12 px-1' : 'h-10 w-[64px] px-1.5'}`}>
-            <img
-              src={logoHitamKiky}
-              alt="Logo KIKY"
-              className="h-full w-full object-contain"
-            />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-[14px] font-bold tracking-tight text-[#0f2b48] leading-tight">
-                PT SOLO MURNI
-              </p>
-              <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
-                Cabang Bandung
-              </p>
+        {/* Brand Header */}
+        <div className={`flex h-[76px] items-center border-b border-slate-200 dark:border-slate-800 ${(!isMobile && collapsed) ? 'justify-center px-2' : 'justify-between px-4'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`flex shrink-0 items-center justify-center rounded-xl bg-black shadow-xs border border-neutral-900/10 overflow-hidden transition-all ${(!isMobile && collapsed) ? 'h-9 w-12 px-1' : 'h-10 w-[64px] px-1.5'}`}>
+              <img
+                src={logoHitamKiky}
+                alt="Logo KIKY"
+                className="h-full w-full object-contain"
+              />
             </div>
+            {(isMobile || !collapsed) && (
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold tracking-tight text-[#0f2b48] dark:text-sky-400 leading-tight">
+                  PT SOLO MURNI
+                </p>
+                <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  Cabang Bandung
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Close button on mobile */}
+          {isMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+              aria-label="Tutup menu"
+            >
+              <X size={18} />
+            </button>
           )}
         </div>
 
-        <nav aria-label="Navigasi utama" className={`pt-7 ${collapsed ? 'px-2.5' : 'px-3.5'}`}>
-          {!collapsed && (
-            <p className="mb-2.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a1a39a]">
-              Menu utama
+        {/* Navigation Links */}
+        <nav aria-label="Navigasi utama" className={`pt-4 ${(!isMobile && collapsed) ? 'px-2' : 'px-3'}`}>
+          {(isMobile || !collapsed) && (
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Menu Utama
             </p>
           )}
           <div className="space-y-1">
@@ -91,13 +98,18 @@ export default function Sidebar({
                   key={id}
                   type="button"
                   onClick={() => handleMenuClick(id)}
-                  title={collapsed ? label : undefined}
+                  title={(!isMobile && collapsed) ? label : undefined}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`group relative flex w-full items-center rounded-lg py-[10px] text-[13px] transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${isActive ? 'bg-[#e9eee8] font-semibold text-[#315643]' : 'text-[#727a73] hover:bg-[#f1f0eb] hover:text-[#34483a]'}`}
+                  className={`group relative flex w-full items-center rounded-md text-xs font-medium transition-colors cursor-pointer min-h-[40px] ${
+                    (!isMobile && collapsed) ? 'justify-center px-0' : 'gap-3 px-3'
+                  } ${
+                    isActive
+                      ? 'bg-[#1b2b44] dark:bg-sky-600 font-semibold text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
+                  }`}
                 >
-                  {isActive && !collapsed && <span className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r bg-[#52745b]" />}
                   <Icon size={18} strokeWidth={isActive ? 2 : 1.7} className="shrink-0" />
-                  {!collapsed && <span className="truncate">{label}</span>}
+                  {(isMobile || !collapsed) && <span className="truncate">{label}</span>}
                 </button>
               )
             })}
@@ -105,39 +117,88 @@ export default function Sidebar({
         </nav>
       </div>
 
-      <div className="mt-4 border-t border-[#eeeae2] p-3">
+      {/* User profile & Logout */}
+      <div className="mt-auto border-t border-slate-200 dark:border-slate-800 p-3">
         <button
           type="button"
           onClick={() => handleMenuClick('profile')}
-          title={collapsed ? `${user.name} (Lihat Profil)` : 'Lihat Profil'}
-          className={`group mb-2 flex w-full items-center rounded-lg py-2 transition-colors cursor-pointer text-left ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'
-            } ${currentActive === 'profile'
-              ? 'bg-[#e9eee8] font-semibold text-[#315643]'
-              : 'hover:bg-[#f1f0eb]'
-            }`}
+          title={(!isMobile && collapsed) ? `${user.name} (Lihat Profil)` : 'Lihat Profil'}
+          className={`group mb-2 flex w-full items-center rounded-md p-2 transition-colors cursor-pointer text-left min-h-[40px] ${
+            (!isMobile && collapsed) ? 'justify-center px-0' : 'gap-3 px-2'
+          } ${
+            currentActive === 'profile'
+              ? 'bg-slate-100 dark:bg-slate-800 font-semibold text-slate-900 dark:text-white'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800/80'
+          }`}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e4e9df] text-[11px] font-bold text-[#315643]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200">
             {initials}
           </div>
-          {!collapsed && (
+          {(isMobile || !collapsed) && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-[#354239] group-hover:text-[#315643] transition-colors">{user.name}</p>
-              <p className="mt-0.5 truncate text-[10px] text-[#92968e]">{user.role}</p>
+              <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                {user.name}
+              </p>
+              <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">
+                {user.role}
+              </p>
             </div>
           )}
         </button>
         <button
           type="button"
-          onClick={onLogout}
-          title={collapsed ? 'Keluar' : undefined}
-          className={`flex w-full items-center rounded-lg py-2 text-xs font-medium text-[#9a6257] transition-colors hover:bg-[#f5ebe7] hover:text-[#82483e] ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`}
+          onClick={() => {
+            onCloseMobile?.()
+            onLogout?.()
+          }}
+          title={(!isMobile && collapsed) ? 'Keluar' : undefined}
+          className={`flex w-full items-center rounded-md py-2 text-xs font-medium text-rose-600 dark:text-rose-400 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 dark:hover:text-rose-300 cursor-pointer min-h-[38px] ${
+            (!isMobile && collapsed) ? 'justify-center px-0' : 'gap-3 px-3'
+          }`}
         >
           <LogOut size={16} strokeWidth={1.8} className="shrink-0" />
-          {!collapsed && <span>Keluar</span>}
+          {(isMobile || !collapsed) && <span>Keluar</span>}
         </button>
       </div>
-    </aside>
+    </div>
+  )
+
+  return (
+    <>
+      {/* 1. Mobile Drawer Sidebar (Tampil saat tombol menu diklik di HP) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop overlay gelap */}
+          <div
+            className="fixed inset-0 bg-slate-900/50 transition-opacity"
+            onClick={onCloseMobile}
+          />
+          {/* Drawer Panel */}
+          <aside className="relative flex flex-col w-[260px] max-w-[85vw] h-full bg-white dark:bg-[#0c1e33] text-slate-800 dark:text-slate-100 border-r border-slate-200 dark:border-slate-800">
+            {renderNavContent(true)}
+          </aside>
+        </div>
+      )}
+
+      {/* 2. Desktop Sticky Sidebar (Layar Tablet & Desktop ≥ md) */}
+      <aside
+        className={`hidden md:flex sticky top-0 z-20 h-screen shrink-0 self-start flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1e33] text-slate-800 dark:text-slate-100 transition-[width] duration-150 ${
+          collapsed ? 'w-[72px]' : 'w-[250px]'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+          title={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+          className="absolute -right-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0c1e33] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer shadow-xs transition-colors"
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+
+        {renderNavContent(false)}
+      </aside>
+    </>
   )
 }
 export { Sidebar }
-

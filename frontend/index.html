@@ -5,6 +5,20 @@
     <link rel="icon" type="image/png" href="/src/assets/Images/kiky.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PT Solo Murni - Sistem Operasional Cabang Bandung</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('kiky_theme');
+          var isDark = saved === 'gelap' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) || (saved === 'sistem' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (saved === 'terang') isDark = false;
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
