@@ -43,3 +43,71 @@
 .animate-fadeIn {
   animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+/* Tema global untuk layar yang belum memiliki utilitas Tailwind dark:* */
+@layer base {
+  html.dark [class~='bg-white']:not([class*='dark:bg-']),
+  html.dark [class~='bg-white/70']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-50']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-50/50']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-50/70']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-50/80']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-100']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-100/70']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-200']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-200/50']:not([class*='dark:bg-']),
+  html.dark [class~='bg-slate-200/60']:not([class*='dark:bg-']),
+  html.dark [class~='bg-[#f3f5f9]']:not([class*='dark:bg-']),
+  html.dark [class~='bg-[#eef0fa]']:not([class*='dark:bg-']),
+  html.dark [class~='bg-[#F1F5F9]']:not([class*='dark:bg-']) {
+    background-color: #0c1e33 !important;
+  }
+
+  html.dark [class~='text-slate-950']:not([class*='dark:text-']),
+  html.dark [class~='text-slate-900']:not([class*='dark:text-']),
+  html.dark [class~='text-slate-800']:not([class*='dark:text-']),
+  html.dark [class~='text-slate-700']:not([class*='dark:text-']),
+  html.dark [class~='text-[#0f2b48]']:not([class*='dark:text-']),
+  html.dark [class~='text-[#111e33]']:not([class*='dark:text-']),
+  html.dark [class~='text-[#1B2A4A]']:not([class*='dark:text-']),
+  html.dark [class~='text-[#1b2b44]']:not([class*='dark:text-']) {
+    color: #e2e8f0 !important;
+  }
+
+  html.dark [class~='text-slate-600']:not([class*='dark:text-']),
+  html.dark [class~='text-slate-500']:not([class*='dark:text-']) {
+    color: #cbd5e1 !important;
+  }
+
+  html.dark [class~='text-slate-400']:not([class*='dark:text-']) {
+    color: #94a3b8 !important;
+  }
+
+  html.dark [class~='border-slate-100']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-200']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-200/50']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-200/70']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-200/80']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-200/90']:not([class*='dark:border-']),
+  html.dark [class~='border-slate-300']:not([class*='dark:border-']) {
+    border-color: #263b55 !important;
+  }
+
+  html.dark input:not([class*='dark:bg-']),
+  html.dark select:not([class*='dark:bg-']),
+  html.dark textarea:not([class*='dark:bg-']) {
+    color-scheme: dark;
+    background-color: #081524;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: #94a3b8;
+  }
+
+  html.dark [class~='hover:bg-slate-50']:not([class*='dark:hover:bg-']):hover,
+  html.dark [class~='hover:bg-slate-100']:not([class*='dark:hover:bg-']):hover {
+    background-color: #172a41 !important;
+  }
+}
