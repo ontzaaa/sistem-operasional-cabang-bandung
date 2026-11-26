@@ -3,11 +3,14 @@ import {
   ChevronDown,
   Info,
   CheckCircle,
+  AlertCircle,
   Sun,
   Moon,
   Monitor,
-  Check
+  Check,
+  KeyRound
 } from 'lucide-react'
+import LupaSandiModal from '../Login/LupaSandiModal'
 
 // Kamus teks khusus halaman Pengaturan
 const text = {
@@ -203,6 +206,9 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
 
   // State Keamanan
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showLupaSandiModal, setShowLupaSandiModal] = useState(false)
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('')
+  const [passwordErrorMsg, setPasswordErrorMsg] = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -545,6 +551,20 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                   {t.passChanged}
                 </p>
 
+                {/* Feedback Notifikasi Password */}
+                {passwordSuccessMsg && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                    <span>{passwordSuccessMsg}</span>
+                  </div>
+                )}
+                {passwordErrorMsg && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-xs text-rose-800 dark:text-rose-300">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                    <span>{passwordErrorMsg}</span>
+                  </div>
+                )}
+
                 {/* Form Ganti Password */}
                 {showChangePassword ? (
                   <div className="mt-3 space-y-2.5">
@@ -554,9 +574,21 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         type="password"
                         placeholder={t.passOldPh}
                         value={oldPassword}
-                        onChange={(e) => setOldPassword(e.target.value)}
+                        onChange={(e) => {
+                          setOldPassword(e.target.value)
+                          setPasswordErrorMsg('')
+                        }}
                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
+                      <div className="mt-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setShowLupaSandiModal(true)}
+                          className="text-[10px] font-medium text-[#1b2b44] dark:text-sky-400 hover:underline cursor-pointer"
+                        >
+                          Lupa kata sandi saat ini?
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="sr-only">{t.passNewPh}</label>
@@ -564,7 +596,10 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         type="password"
                         placeholder={t.passNewPh}
                         value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value)
+                          setPasswordErrorMsg('')
+                        }}
                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
                     </div>
@@ -574,7 +609,10 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                         type="password"
                         placeholder={t.passConfirmPh}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value)
+                          setPasswordErrorMsg('')
+                        }}
                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#1b2b44] dark:focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-[#1b2b44]"
                       />
                     </div>
@@ -586,6 +624,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           setOldPassword('')
                           setNewPassword('')
                           setConfirmPassword('')
+                          setPasswordErrorMsg('')
                         }}
                         className="flex-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors cursor-pointer min-h-[36px]"
                       >
@@ -594,11 +633,25 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                       <button
                         type="button"
                         onClick={() => {
-                          alert(t.passAlert)
+                          if (!oldPassword.trim()) {
+                            setPasswordErrorMsg('Silakan masukkan kata sandi saat ini.')
+                            return
+                          }
+                          if (newPassword.length < 8) {
+                            setPasswordErrorMsg('Kata sandi baru minimal harus 8 karakter.')
+                            return
+                          }
+                          if (newPassword !== confirmPassword) {
+                            setPasswordErrorMsg('Konfirmasi kata sandi baru tidak cocok.')
+                            return
+                          }
+                          setPasswordSuccessMsg('Kata sandi berhasil diperbarui.')
+                          setPasswordErrorMsg('')
                           setShowChangePassword(false)
                           setOldPassword('')
                           setNewPassword('')
                           setConfirmPassword('')
+                          setTimeout(() => setPasswordSuccessMsg(''), 4000)
                         }}
                         className="flex-1 rounded-md bg-[#1b2b44] dark:bg-sky-600 py-2 text-xs font-semibold text-white hover:bg-[#111e33] dark:hover:bg-sky-500 transition-colors cursor-pointer min-h-[36px]"
                       >
@@ -607,13 +660,28 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowChangePassword(true)}
-                    className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[38px]"
-                  >
-                    {t.passBtnChange}
-                  </button>
+                  <div className="mt-3 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangePassword(true)
+                        setPasswordSuccessMsg('')
+                        setPasswordErrorMsg('')
+                      }}
+                      className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#081524] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[38px]"
+                    >
+                      {t.passBtnChange}
+                    </button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowLupaSandiModal(true)}
+                        className="text-[11px] font-medium text-[#1b2b44] dark:text-sky-400 hover:underline cursor-pointer"
+                      >
+                        Lupa kata sandi akun?
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -621,6 +689,19 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
 
         </div>
       </div>
+
+      {/* Modal Dialog Lupa Kata Sandi */}
+      <LupaSandiModal
+        isOpen={showLupaSandiModal}
+        onClose={() => setShowLupaSandiModal(false)}
+        initialIdentifier={user?.username || user?.name || ''}
+        onSuccess={({ message }) => {
+          setPasswordSuccessMsg(message || 'Kata sandi akun Anda berhasil diperbarui.')
+          setPasswordErrorMsg('')
+          setShowLupaSandiModal(false)
+          setTimeout(() => setPasswordSuccessMsg(''), 4000)
+        }}
+      />
     </div>
   )
 }
