@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useLayoutEffect, useState } from 'react'
 import LandingPage from './component/Landing page/landing'
 import LoginForm from './component/Login/LoginForm'
 import Register from './component/Register/Register'
@@ -6,6 +6,40 @@ import Dashboard from './component/Dashboard/Dashboard'
 import './App.css'
 
 export default function App() {
+  useLayoutEffect(() => {
+    const applyTheme = (mode) => {
+      const isDark = mode === 'gelap' || (
+        mode === 'sistem' &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      )
+      document.documentElement.classList.toggle('dark', isDark)
+      document.body.classList.toggle('dark', isDark)
+    }
+
+    const savedTheme = window.localStorage.getItem('kiky_theme') || 'terang'
+    applyTheme(savedTheme)
+
+    const handleThemeChange = (event) => {
+      const nextTheme = event.detail?.theme || window.localStorage.getItem('kiky_theme') || 'terang'
+      applyTheme(nextTheme)
+    }
+
+    const systemPreference = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleSystemPreferenceChange = () => {
+      if ((window.localStorage.getItem('kiky_theme') || 'terang') === 'sistem') {
+        applyTheme('sistem')
+      }
+    }
+
+    window.addEventListener('kiky-theme-changed', handleThemeChange)
+    systemPreference.addEventListener?.('change', handleSystemPreferenceChange)
+
+    return () => {
+      window.removeEventListener('kiky-theme-changed', handleThemeChange)
+      systemPreference.removeEventListener?.('change', handleSystemPreferenceChange)
+    }
+  }, [])
+
   const [currentPage, setCurrentPage] = useState('landing')
   const [successInfo, setSuccessInfo] = useState('')
   const [registeredUsername, setRegisteredUsername] = useState('')
