@@ -1,5 +1,5 @@
-﻿import React from 'react'
-import { Shield, ArrowRight } from 'lucide-react'
+import React from 'react'
+import { ArrowRight } from 'lucide-react'
 import logoKiky from '../../assets/Images/kiky.png'
 import bgImage from '../../assets/Images/background.jpeg'
 
@@ -13,23 +13,23 @@ export default function LandingPage({ onEnterSystem }) {
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-black/70 to-slate-950/90 pointer-events-none" />
 
       {/* Bagian Paling Atas: Logo KIKY */}
-      <header className="relative z-10 flex w-full justify-center px-4 pt-5 backdrop-blur-sm sm:px-8 sm:pt-7">
-        <div className="flex items-center justify-center transition-transform duration-300 hover:scale-105">
+      <header className="relative z-10 flex w-full justify-center px-4 pt-5 sm:px-8 sm:pt-7">
+        <div className="flex items-center justify-center">
           <img
             src={logoKiky}
-            alt="KIKY Stationery Logo"
+            alt="Logo KIKY Stationery"
             className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
           />
         </div>
       </header>
 
-      {/* Konten Utama: Card Frosted Glass Tengah */}
+      {/* Konten Utama */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
         <div className="w-full max-w-[760px] p-5 text-center sm:p-8">
 
           {/* Heading Judul Utama */}
           <h1 className="text-2xl font-bold leading-snug tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-3xl lg:text-[32px]">
-            Sistem Terpadu Pergudangan; <br className="hidden sm:inline" />
+            Sistem Terpadu Pergudangan &amp; <br className="hidden sm:inline" />
             Distribusi Logistik <span className="text-[#5eead4]">KIKY</span>
           </h1>
 
@@ -38,18 +38,17 @@ export default function LandingPage({ onEnterSystem }) {
             Portal terpusat untuk monitoring inventori gudang, pengelolaan armada distribusi, dan sinkronisasi pesanan sales secara real-time.
           </p>
 
-          {/* Tombol CTA: Masuk ke Sistem */}
+          {/* Tombol CTA: Masuk ke Sistem (Menyatu dengan Background) */}
           <div className="mt-7 flex justify-center">
             <button
               type="button"
               onClick={onEnterSystem}
-              className="group inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-black/10 backdrop-blur-lg transition-all duration-200 hover:scale-[1.03] hover:bg-white/20 active:scale-[0.98] sm:text-sm"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-black/10 backdrop-blur-md transition-colors hover:bg-white/20 min-h-[44px] sm:text-sm"
             >
               <span>Masuk ke Sistem</span>
               <ArrowRight
                 size={16}
-                strokeWidth={2.4}
-                className="transition-transform duration-200 group-hover:translate-x-1"
+                strokeWidth={2.2}
               />
             </button>
           </div>
@@ -65,9 +64,3 @@ export default function LandingPage({ onEnterSystem }) {
     </div>
   )
 }
-
-
-
-
-
-
