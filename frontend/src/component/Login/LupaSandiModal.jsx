@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X,
-  Mail,
   User,
   Lock,
   Eye,
@@ -10,131 +9,45 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
-  ArrowLeft,
-  RotateCw,
-  ShieldCheck,
-  Smartphone
+  ShieldCheck
 } from 'lucide-react'
 
 export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIdentifier = '' }) {
-  // Step: 1 = Input Akun, 2 = Input OTP/Kode, 3 = Buat Sandi Baru, 4 = Selesai
-  const [step, setStep] = useState(1)
-
-  // Form states
-  const [identifier, setIdentifier] = useState(initialIdentifier)
-  const [verifyMethod, setVerifyMethod] = useState('email') // 'email' | 'wa'
-  const [otpCode, setOtpCode] = useState('')
-  const [generatedOtp, setGeneratedOtp] = useState('')
+  const [username, setUsername] = useState(initialIdentifier)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Loading & Error states
   const [isLoading, setIsLoading] = useState(false)
-  const [loadingText, setLoadingText] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [successInfo, setSuccessInfo] = useState('')
+  const [isSuccess, setIsSuccess] = useState(false)
 
-  // Resend Timer
-  const [resendTimer, setResendTimer] = useState(60)
-  const [canResend, setCanResend] = useState(false)
-  const timerRef = useRef(null)
-
-  // Sinkronkan initialIdentifier saat modal dibuka
+  // Reset state saat modal dibuka
   useEffect(() => {
     if (isOpen) {
-      setStep(1)
-      setIdentifier(initialIdentifier || '')
-      setOtpCode('')
+      setUsername(initialIdentifier || '')
       setNewPassword('')
       setConfirmPassword('')
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
       setErrorMessage('')
-      setSuccessInfo('')
+      setIsSuccess(false)
       setIsLoading(false)
     }
   }, [isOpen, initialIdentifier])
 
-  // Timer countdown untuk kirim ulang kode
-  useEffect(() => {
-    if (step === 2 && resendTimer > 0) {
-      timerRef.current = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current)
-            setCanResend(true)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-    return () => clearInterval(timerRef.current)
-  }, [step, resendTimer])
-
   if (!isOpen) return null
 
-  // Handler Step 1: Kirim Kode Verifikasi
-  const handleRequestOtp = (e) => {
+  const handleResetDirect = (e) => {
     e.preventDefault()
     setErrorMessage('')
 
-    const trimmed = identifier.trim()
-    if (!trimmed) {
-      setErrorMessage('Silakan masukkan Username atau Email terdaftar Anda.')
+    const cleanUsername = username.trim()
+    if (!cleanUsername) {
+      setErrorMessage('Silakan masukkan Username atau Email akun Anda.')
       return
     }
-
-    setIsLoading(true)
-    setLoadingText('Memeriksa akun operasional di sistem...')
-
-    setTimeout(() => {
-      // Buat kode verifikasi 6 digit yang acak dan realistis
-      const mockCode = String(Math.floor(100000 + Math.random() * 900000))
-      setGeneratedOtp(mockCode)
-      setIsLoading(false)
-      setStep(2)
-      setResendTimer(60)
-      setCanResend(false)
-      setSuccessInfo(
-        verifyMethod === 'email'
-          ? `Kode verifikasi telah dikirimkan ke email terdaftar untuk ${trimmed}.`
-          : `Kode verifikasi telah dikirimkan melalui WhatsApp dinas ke nomor terdaftar ${trimmed}.`
-      )
-    }, 600)
-  }
-
-  // Handler Step 2: Validasi OTP
-  const handleVerifyOtp = (e) => {
-    e.preventDefault()
-    setErrorMessage('')
-
-    const trimmedOtp = otpCode.trim()
-    if (!trimmedOtp) {
-      setErrorMessage('Silakan masukkan 6 digit kode verifikasi.')
-      return
-    }
-
-    if (trimmedOtp !== generatedOtp && trimmedOtp !== '849201' && trimmedOtp !== '123456') {
-      setErrorMessage('Kode verifikasi tidak sesuai. Periksa kembali kode Anda.')
-      return
-    }
-
-    setIsLoading(true)
-    setLoadingText('Memvalidasi kode keamanan...')
-
-    setTimeout(() => {
-      setIsLoading(false)
-      setStep(3)
-      setErrorMessage('')
-      setSuccessInfo('')
-    }, 500)
-  }
-
-  // Handler Step 3: Simpan Sandi Baru
-  const handleResetPassword = (e) => {
-    e.preventDefault()
-    setErrorMessage('')
 
     if (newPassword.length < 8) {
       setErrorMessage('Kata sandi baru minimal harus 8 karakter.')
@@ -147,37 +60,24 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
     }
 
     setIsLoading(true)
-    setLoadingText('Mengenkripsi & memperbarui kata sandi...')
 
     setTimeout(() => {
-      // Simpan catatan password reset ke browser
+      // Simpan pembaruan kata sandi ke penyimpanan browser
       try {
-        const usernameClean = identifier.trim().toLowerCase()
-        localStorage.setItem(`kiky_pwd_reset_${usernameClean}`, newPassword)
+        localStorage.setItem(`kiky_pwd_reset_${cleanUsername.toLowerCase()}`, newPassword)
       } catch (err) {
         // Safe fallback
       }
 
       setIsLoading(false)
-      setStep(4)
-    }, 700)
+      setIsSuccess(true)
+    }, 450)
   }
 
-  // Handler Kirim Ulang Kode
-  const handleResend = () => {
-    if (!canResend) return
-    const mockCode = String(Math.floor(100000 + Math.random() * 900000))
-    setGeneratedOtp(mockCode)
-    setResendTimer(60)
-    setCanResend(false)
-    setSuccessInfo(`Kode verifikasi baru telah dikirimkan: ${mockCode}`)
-  }
-
-  // Handler Selesai & Kembali ke Login
   const handleFinish = () => {
     onSuccess?.({
-      username: identifier.trim(),
-      message: 'Kata sandi berhasil direset! Silakan masuk dengan kata sandi baru Anda.'
+      username: username.trim(),
+      message: `Kata sandi untuk akun "${username.trim()}" berhasil direset! Silakan masuk dengan kata sandi baru.`
     })
     onClose()
   }
@@ -191,7 +91,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[460px] rounded-2xl border border-slate-700/60 bg-[#0c1e33] text-white shadow-2xl shadow-black/50 overflow-hidden font-sans"
+        className="relative w-full max-w-[440px] rounded-2xl border border-slate-700/60 bg-[#0c1e33] text-white shadow-2xl shadow-black/50 overflow-hidden font-sans"
       >
         {/* Accent Bar Atas */}
         <div className="h-1 w-full bg-gradient-to-r from-teal-400 via-sky-400 to-[#1b2b44]" />
@@ -204,7 +104,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                Pemulihan Kata Sandi
+                Reset Kata Sandi
               </h2>
               <p className="text-[11px] text-slate-400">PT Solo Murni • Cabang Bandung</p>
             </div>
@@ -220,27 +120,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
           </button>
         </div>
 
-        {/* Stepper Progress Bar */}
-        {step < 4 && (
-          <div className="flex items-center justify-between px-6 py-2.5 bg-[#081524] border-b border-slate-800/80 text-[11px]">
-            <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-sky-400 font-semibold' : 'text-slate-500'}`}>
-              <span className={`flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] ${step >= 1 ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-400'}`}>1</span>
-              <span>Identitas</span>
-            </div>
-            <div className="h-0.5 w-8 bg-slate-700" />
-            <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-sky-400 font-semibold' : 'text-slate-500'}`}>
-              <span className={`flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] ${step >= 2 ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-400'}`}>2</span>
-              <span>Verifikasi</span>
-            </div>
-            <div className="h-0.5 w-8 bg-slate-700" />
-            <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-sky-400 font-semibold' : 'text-slate-500'}`}>
-              <span className={`flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] ${step >= 3 ? 'bg-sky-500 text-white' : 'bg-slate-700 text-slate-400'}`}>3</span>
-              <span>Sandi Baru</span>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Body */}
+        {/* Modal Content */}
         <div className="p-6">
           {/* Notifikasi Error */}
           {errorMessage && (
@@ -250,25 +130,16 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
             </div>
           )}
 
-          {/* Notifikasi Info Sukses Sementara */}
-          {successInfo && (
-            <div className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/40 p-3 text-xs text-emerald-200">
-              <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
-              <span>{successInfo}</span>
-            </div>
-          )}
+          {!isSuccess ? (
+            <form onSubmit={handleResetDirect} className="space-y-4">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Masukkan <strong>Username</strong> akun Anda, lalu tentukan <strong>kata sandi baru</strong> secara langsung tanpa perlu kode verifikasi.
+              </p>
 
-          {/* =========================================================================
-              STEP 1: MASUKKAN IDENTITAS AKUN
-             ========================================================================= */}
-          {step === 1 && (
-            <form onSubmit={handleRequestOtp} className="space-y-4">
+              {/* Input Username */}
               <div>
-                <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                  Masukkan <strong>Username</strong> atau <strong>Email</strong> yang terdaftar pada sistem operasional KIKY untuk menerima kode verifikasi pemulihan.
-                </p>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-200">
-                  Username atau Email Karyawan <span className="text-rose-400">*</span>
+                  Username Akun <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -277,180 +148,20 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: andi.wijaya atau andi@solomurni.co.id"
-                    value={identifier}
+                    placeholder="Masukkan username Anda"
+                    value={username}
                     onChange={(e) => {
-                      setIdentifier(e.target.value)
+                      setUsername(e.target.value)
                       setErrorMessage('')
                     }}
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-4 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors"
+                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-4 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors disabled:opacity-60"
                   />
                 </div>
               </div>
 
-              {/* Pilihan Metode Pengiriman */}
+              {/* Input Kata Sandi Baru */}
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-200">
-                  Metode Pengiriman Kode:
-                </label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setVerifyMethod('email')}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-left cursor-pointer transition-all ${
-                      verifyMethod === 'email'
-                        ? 'border-sky-400 bg-sky-950/40 text-white font-semibold ring-1 ring-sky-400'
-                        : 'border-slate-700 bg-[#081524] text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Mail className="h-4 w-4 text-sky-400 shrink-0" />
-                    <span>Email Dinas</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setVerifyMethod('wa')}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-left cursor-pointer transition-all ${
-                      verifyMethod === 'wa'
-                        ? 'border-sky-400 bg-sky-950/40 text-white font-semibold ring-1 ring-sky-400'
-                        : 'border-slate-700 bg-[#081524] text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Smartphone className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>WhatsApp / SMS</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Tombol Aksi Step 1 */}
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer min-h-[38px]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#1b2b44] hover:bg-[#253e63] border border-sky-400/30 rounded-lg transition-colors cursor-pointer min-h-[38px] shadow-xs disabled:opacity-60"
-                >
-                  {isLoading ? (
-                    <span>{loadingText}</span>
-                  ) : (
-                    <>
-                      <span>Kirim Kode Verifikasi</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* =========================================================================
-              STEP 2: MASUKKAN KODE VERIFIKASI (OTP)
-             ========================================================================= */}
-          {step === 2 && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div>
-                <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                  Masukkan 6 digit kode keamanan yang dikirimkan ke kontak akun <strong>{identifier}</strong>.
-                </p>
-
-                <label className="mb-1.5 block text-xs font-semibold text-slate-200">
-                  Kode Verifikasi (6 Digit) <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  autoFocus
-                  placeholder="Contoh: 849201"
-                  value={otpCode}
-                  onChange={(e) => {
-                    setOtpCode(e.target.value.replace(/\D/g, ''))
-                    setErrorMessage('')
-                  }}
-                  disabled={isLoading}
-                  className="w-full rounded-xl border border-slate-700 bg-[#081524] py-3 px-4 text-center text-lg sm:text-xl font-mono tracking-widest text-sky-400 font-bold placeholder:text-slate-600 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors"
-                />
-
-                {/* Tombol Bantu Cepat untuk Pengujian Mudah */}
-                {generatedOtp && (
-                  <div className="mt-2.5 flex items-center justify-between rounded-lg bg-sky-950/30 border border-sky-800/40 px-3 py-1.5 text-[11px] text-sky-300">
-                    <span>Kode simulasi Anda: <strong className="font-mono text-white text-xs">{generatedOtp}</strong></span>
-                    <button
-                      type="button"
-                      onClick={() => setOtpCode(generatedOtp)}
-                      className="text-[10px] font-bold text-sky-400 hover:text-white underline cursor-pointer"
-                    >
-                      Gunakan Kode
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Kirim Ulang Countdown */}
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                <span>Tidak menerima kode?</span>
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    className="flex items-center gap-1 font-semibold text-sky-400 hover:text-sky-300 cursor-pointer"
-                  >
-                    <RotateCw className="h-3.5 w-3.5" />
-                    <span>Kirim Ulang</span>
-                  </button>
-                ) : (
-                  <span className="text-slate-500">Kirim ulang dalam {resendTimer} detik</span>
-                )}
-              </div>
-
-              {/* Tombol Aksi Step 2 */}
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  disabled={isLoading}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Ubah Identitas</span>
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#1b2b44] hover:bg-[#253e63] border border-sky-400/30 rounded-lg transition-colors cursor-pointer min-h-[38px] shadow-xs disabled:opacity-60"
-                >
-                  {isLoading ? (
-                    <span>{loadingText}</span>
-                  ) : (
-                    <>
-                      <span>Verifikasi Kode</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* =========================================================================
-              STEP 3: BUAT KATA SANDI BARU
-             ========================================================================= */}
-          {step === 3 && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                  Verifikasi berhasil untuk akun <strong>{identifier}</strong>. Silakan tentukan kata sandi baru Anda.
-                </p>
-
-                {/* Input Kata Sandi Baru */}
                 <label className="mb-1.5 block text-xs font-semibold text-slate-200">
                   Kata Sandi Baru <span className="text-rose-400">*</span>
                 </label>
@@ -468,7 +179,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                       setErrorMessage('')
                     }}
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-10 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors"
+                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-10 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors disabled:opacity-60"
                   />
                   <button
                     type="button"
@@ -499,7 +210,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                       setErrorMessage('')
                     }}
                     disabled={isLoading}
-                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-10 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors"
+                    className="w-full rounded-xl border border-slate-700 bg-[#081524] py-2.5 pr-10 pl-10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-colors disabled:opacity-60"
                   />
                   <button
                     type="button"
@@ -510,7 +221,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                   </button>
                 </div>
 
-                {/* Petunjuk Indikator Kesesuaian */}
+                {/* Indikator Validasi Sandi */}
                 <div className="mt-2 space-y-1 text-[11px]">
                   <div className={`flex items-center gap-1.5 ${newPassword.length >= 8 ? 'text-emerald-400' : 'text-slate-400'}`}>
                     <CheckCircle className="h-3 w-3" />
@@ -525,8 +236,8 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                 </div>
               </div>
 
-              {/* Tombol Aksi Step 3 */}
-              <div className="flex items-center justify-end gap-2 pt-2">
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-700/50">
                 <button
                   type="button"
                   onClick={onClose}
@@ -538,33 +249,29 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors cursor-pointer min-h-[38px] shadow-xs disabled:opacity-60"
+                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-[#1b2b44] hover:bg-[#253e63] border border-sky-400/40 rounded-lg transition-colors cursor-pointer min-h-[38px] shadow-xs disabled:opacity-60"
                 >
                   {isLoading ? (
-                    <span>{loadingText}</span>
+                    <span>Memperbarui sandi...</span>
                   ) : (
                     <>
-                      <span>Simpan Kata Sandi Baru</span>
-                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>Reset Kata Sandi</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </>
                   )}
                 </button>
               </div>
             </form>
-          )}
-
-          {/* =========================================================================
-              STEP 4: SUKSES
-             ========================================================================= */}
-          {step === 4 && (
-            <div className="text-center py-4 space-y-4">
+          ) : (
+            /* Tampilan Sukses */
+            <div className="text-center py-3 space-y-4">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-400/20">
                 <CheckCircle className="h-8 w-8" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Kata Sandi Berhasil Diperbarui!</h3>
+                <h3 className="text-base font-bold text-white">Kata Sandi Berhasil Direset!</h3>
                 <p className="mt-1.5 text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                  Kata sandi baru untuk akun <strong>{identifier}</strong> telah berhasil disimpan. Anda kini dapat masuk kembali ke sistem operasional KIKY Cabang Bandung.
+                  Kata sandi baru untuk akun <strong>{username}</strong> telah tersimpan. Silakan masuk kembali dengan kata sandi baru Anda.
                 </p>
               </div>
               <div className="pt-2">
@@ -573,7 +280,7 @@ export default function LupaSandiModal({ isOpen, onClose, onSuccess, initialIden
                   onClick={handleFinish}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-500 py-3 text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer shadow-lg shadow-sky-600/30"
                 >
-                  <span>Masuk Sekarang dengan Kata Sandi Baru</span>
+                  <span>Masuk Sekarang dengan Sandi Baru</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
