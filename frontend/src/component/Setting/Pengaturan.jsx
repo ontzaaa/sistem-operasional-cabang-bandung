@@ -21,11 +21,11 @@ const text = {
 
     prefTitle: 'Preferensi Sistem',
     prefDesc: 'Atur tema tampilan, bahasa antarmuka, dan zona waktu operasional.',
-    themeLabel: 'Tema Tampilan',
-    themeHelper: 'Pilih mode warna tampilan antarmuka aplikasi',
-    themeLight: 'Mode Terang',
-    themeDark: 'Mode Gelap',
-    themeSystem: 'Sistem',
+    themeLabel: 'Preferensi Tema Antarmuka',
+    themeHelper: 'Sesuaikan skema warna tampilan aplikasi operasional sesuai kenyamanan kerja Anda',
+    themeLight: 'Tema Terang (Light)',
+    themeDark: 'Tema Gelap (Dark)',
+    themeSystem: 'Otomatis (Sistem)',
     langLabel: 'Bahasa',
     langHelper: 'Bahasa tampilan aplikasi',
     tzLabel: 'Zona Waktu',
@@ -149,38 +149,23 @@ function SelectField({ value, onChange, options }) {
   )
 }
 
+// Helper terpadu DOM tema di luar fungsi komponen utama
+const applyThemeToDOM = (themeMode) => {
+  const isDark = themeMode === 'gelap' || (
+    themeMode === 'sistem' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+  document.documentElement.classList.toggle('dark', isDark)
+  document.body.classList.toggle('dark', isDark)
+}
+
 export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operasional Gudang & Penjualan' }, onLogout }) {
-  // Fungsi terpadu untuk mengubah tema langsung di elemen DOM (HTML & Body)
-  const applyThemeToDOM = (themeMode) => {
-    let isDark = false
-    if (themeMode === 'gelap') {
-      isDark = true
-    } else if (themeMode === 'terang') {
-      isDark = false
-    } else {
-      isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
+  // State Tema & Preferensi
+  const [activeTema, setActiveTema] = useState(() => localStorage.getItem('kiky_theme') || 'terang')
+  const [selectedTema, setSelectedTema] = useState(() => localStorage.getItem('kiky_theme') || 'terang')
+  const [bahasa, setBahasa] = useState(() => localStorage.getItem('kiky_language') || 'id')
+  const [zonaWaktu, setZonaWaktu] = useState(() => localStorage.getItem('kiky_timezone') || 'wib')
 
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-      document.body.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      document.body.classList.remove('dark')
-    }
-  }
-
-  // State Tema yang aktif tersimpan di sistem
-  const [activeTema, setActiveTema] = useState(() => {
-    return localStorage.getItem('kiky_theme') || 'terang'
-  })
-
-  // State Tema yang sedang dipilih pengguna
-  const [selectedTema, setSelectedTema] = useState(() => {
-    return localStorage.getItem('kiky_theme') || 'terang'
-  })
-
-  // Sinkronisasi Tema saat komponen pertama kali dimuat
+  // Sinkronisasi Tema saat komponen dimuat
   useEffect(() => {
     const saved = localStorage.getItem('kiky_theme') || 'terang'
     setActiveTema(saved)
@@ -188,17 +173,13 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
     applyThemeToDOM(saved)
   }, [])
 
-  // Handler saat opsi tema dipilih: LANGSUNG BERUBAH SECARA VISUAL SEKETIKA!
+  // Handler saat opsi tema dipilih seketika
   const handleSelectTheme = (themeMode) => {
     setSelectedTema(themeMode)
-    applyThemeToDOM(themeMode) // Mengubah mode visual seketika saat opsi diklik!
+    applyThemeToDOM(themeMode)
     localStorage.setItem('kiky_theme', themeMode)
     window.dispatchEvent(new CustomEvent('kiky-theme-changed', { detail: { theme: themeMode } }))
   }
-
-  // State Preferensi Umum
-  const [bahasa, setBahasa] = useState(() => localStorage.getItem('kiky_language') || 'id')
-  const [zonaWaktu, setZonaWaktu] = useState(() => localStorage.getItem('kiky_timezone') || 'wib')
 
   // State Notifikasi
   const [notifOrder, setNotifOrder] = useState(true)
@@ -291,7 +272,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                     {t.themeLabel}
                   </label>
                   <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                    Tema aktif saat ini: <span className="font-semibold text-[#1b2b44] dark:text-sky-400 capitalize">{activeTema === 'gelap' ? 'Mode Gelap' : activeTema === 'terang' ? 'Mode Terang' : 'Sistem'}</span>
+                    Tema aktif saat ini: <span className="font-semibold text-[#1b2b44] dark:text-sky-400 capitalize">{activeTema === 'gelap' ? 'Tema Gelap' : activeTema === 'terang' ? 'Tema Terang' : 'Otomatis Sistem'}</span>
                   </span>
                 </div>
                 <p className="mb-3 text-[11px] text-slate-500 dark:text-slate-400">
@@ -321,7 +302,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Latar putih &amp; bersih</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Kontras standar cerah untuk siang hari</p>
                     </div>
                     {selectedTema === 'terang' && (
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1b2b44] dark:bg-sky-500 text-white">
@@ -352,7 +333,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           </span>
                         )}
                       </div>
-                      <p className={`text-[10px] mt-0.5 ${selectedTema === 'gelap' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>Nyaman di mata malam hari</p>
+                      <p className={`text-[10px] mt-0.5 ${selectedTema === 'gelap' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>Mereduksi kelelahan mata di ruang redup</p>
                     </div>
                     {selectedTema === 'gelap' && (
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white">
@@ -383,7 +364,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Otomatis ikuti OS</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Menyesuaikan pengaturan sistem operasi</p>
                     </div>
                     {selectedTema === 'sistem' && (
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1b2b44] dark:bg-sky-500 text-white">
@@ -397,7 +378,7 @@ export default function Pengaturan({ user = { name: 'Andi Wijaya', role: 'Operas
                 {selectedTema !== activeTema && (
                   <div className="mt-3 flex items-center justify-between rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
                     <span>
-                      Pilihan baru: <strong>{selectedTema === 'gelap' ? 'Mode Gelap' : selectedTema === 'terang' ? 'Mode Terang' : 'Sistem'}</strong>. Tekan tombol <strong>"Simpan Perubahan"</strong> di bawah untuk menerapkan secara langsung.
+                      Pilihan baru: <strong>{selectedTema === 'gelap' ? 'Tema Gelap' : selectedTema === 'terang' ? 'Tema Terang' : 'Otomatis Sistem'}</strong>. Tekan tombol <strong>"Simpan Perubahan"</strong> di bawah untuk menerapkan secara langsung.
                     </span>
                   </div>
                 )}
