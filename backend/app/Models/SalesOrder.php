@@ -23,7 +23,7 @@ class SalesOrder extends Model
 
     protected $casts = [
         'tanggal_so' => 'date',
-        'subtotal'   => 'float',
+        'subtotal' => 'float',
         'grand_total' => 'float',
     ];
 
